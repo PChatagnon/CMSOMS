@@ -1,0 +1,141 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Roboto, sans-serif;
+  line-height: 18px;
+  font-size: 14px;
+  background-color: rgb(237, 236, 236);
+}
+
+.portlet {
+  width: 100%;
+  height: 100%;
+}
+
+/* Disable vertical scroll bar on portlet layout class */
+.layout {
+  overflow-x: hidden;
+}
+
+.loader {
+  position: fixed;
+  z-index: 999;
+  height: 2em;
+  overflow: visible;
+  margin: auto;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+}
+
+.spinner {
+  -webkit-box-flex: 0;
+  -ms-flex: 0 0 auto;
+  flex: 0 0 auto;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -ms-flex-direction: column;
+  flex-direction: column;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  -ms-flex-pack: center;
+  justify-content: center;
+  width: 100px;
+  height: 100px;
+  position: relative;
+  margin: auto;
+}
+
+/* helperClass for react-sortable-hoc */
+.sortableHelper {
+  z-index: 99999;
+}
+
+/* Styles for rotated table column  */
+.rotate {
+  white-space: nowrap;
+  max-width: 20px;
+  transform: rotate(-75deg);
+  margin-top: 50px;
+  margin-bottom: 10px;
+}
+
+/* Remove all the outline border all in our document. 
+   Deactivates the border firefox adds for links. */
+a { outline: none; }
+
+/*
+The default font-size of KaTeX math is 20% larger than the surrounding text. 
+This line resets this setting. https://github.com/Khan/KaTeX/wiki/Font-Options */
+.katex { font-size: 1.1em !important; }
+
+.tutorial-helper {
+  --reactour-accent: rgb(33, 150, 243) !important;
+  line-height: 19px !important;
+  font-family: Roboto, sans-serif !important;
+  font-size: 15px !important;
+  padding: 15px !important;
+}
+
+.tutorial-helper:after {
+  background-color: rgb(33, 150, 243) !important;
+}
+
+.tutorial-helper nav > button:disabled {
+  color:  rgb(33, 150, 243) !important;
+}
+
+/* override several styles of react-image-gallery library */
+.image-gallery-slide img {
+  width: auto;
+}
+
+.image-gallery-bullets {
+  bottom: -25px;
+}
+.image-gallery-bullet {
+  border-color: rgb(155, 155, 155) !important;
+  box-shadow: none !important;
+}
+
+.image-gallery-bullet.active {
+  background: rgb(155, 155, 155) !important;
+}
+
+.image-gallery-left-nav,
+.image-gallery-right-nav {
+  padding: 0;
+  font-size: 3em;
+}
+
+.image-gallery-left-nav:hover::before,
+.image-gallery-right-nav:hover::before {
+  color: rgb(33, 150, 243);
+}
+
+@media print {
+  .nonPrintable {
+    visibility: hidden;
+  }
+  .layout {
+    visibility: visible;
+    transform: scale(.8);
+    top: 0;
+    left: 0;
+  }
+  table {
+    page-break-inside: avoid;
+  }
+
+}
+
+/* Hides the "clear button" at the edge of a text input field for IE */
+::-ms-clear {
+  display: none;
+}
