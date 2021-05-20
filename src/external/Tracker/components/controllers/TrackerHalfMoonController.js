@@ -73,7 +73,7 @@ const RESTHUB_URL = '/tracker-resthub';
 
 class TrackerHalfMoonController extends Component {
 
-    static controllerHeight = 360;
+    static controllerHeight = 370;
 
     constructor() {
         super();
@@ -118,6 +118,7 @@ class TrackerHalfMoonController extends Component {
         
         let { url } = controller.configuration;
         let urlMetadata = "trker_int2r.c13560";
+        let urlRuns = "trker_int2r.runs";
         console.log("url is "+url);
         return Resthub.json2("SELECT t.PART_BARCODE FROM " + urlMetadata + " t ORDER BY t.PART_BARCODE ", null, 1, 1, RESTHUB_URL)
             .then(resp => {
@@ -141,7 +142,7 @@ class TrackerHalfMoonController extends Component {
                 		structureType = lastStructureType ? lastStructureType : null
                 		console.log("structure type "+ structureType);
                 		
-                			return Resthub.json2("SELECT DISTINCT t.RUN_NAME, t.RUN_TYPE_NUMBER FROM " + url + " t WHERE t.SENSOR = '" + sensorType + "' ", null, null, null, RESTHUB_URL)
+                			return Resthub.json2("SELECT DISTINCT r.NAME, t.RUN_NUMBER FROM  from trker_int2r.c13440 d, "+ urlMetadata +" m, trker_int2r.datasets da, " + urlRuns + " r where m.Part_id=d.part_id and d.part_barcode='" + barcodeType + "' and m.kind_of_hm_flute_id = '" + fluteType + "' and m.KIND_OF_HM_STRUCT_ID= '" + structureType + "'  and d.condition_data_set_id=da.id and da.run_id=r.id", null, null, null, RESTHUB_URL)
                     			    .then(resp => {
                         			runs = resp.data.data;
 
@@ -161,7 +162,7 @@ class TrackerHalfMoonController extends Component {
     }
 
     static controllerQueryTitle(state) {
-        return `Sensor Type:   ${state.tracker_partBarcode}`;
+        return `HM Barcode:   ${state.tracker_partBarcode}`;
     }
 
     updateRuns = (runs) => {
@@ -187,7 +188,7 @@ class TrackerHalfMoonController extends Component {
     }
 
     validateBarcodeType = (barcodeType) => {
-        return this.state.barcodeTypes.find(s => s === barcodeType);
+        return this.state.barcodeTypes.find(s => s === partBarcode);
         //return true;
     }
     
@@ -338,7 +339,7 @@ class TrackerHalfMoonController extends Component {
     onIDAdd = () => {
         let { controllerState } = this.props;
         if (controllerState.tracker_runTypeNumber){
-            if (controllerState.tracker_data.find(item => item.tracker_runTypeNumber === controllerState.tracker_runTypeNumber) && controllerState.tracker_data.find(item => item.tracker_partBarcode === controllerState.tracker_partBarcode)){
+            if (/*controllerState.tracker_data.find(item => item.tracker_runTypeNumber === controllerState.tracker_runTypeNumber) &&*/ controllerState.tracker_data.find(item => item.tracker_partBarcode === controllerState.tracker_partBarcode) && controllerState.tracker_data.find(item => item.tracker_fluteType === controllerState.tracker_fluteType) && controllerState.tracker_data.find(item => item.tracker_hmStructType === controllerState.tracker_hmStructType)){
                  //Snackbar goes here. Inform that this one already `add`ed.
                  this.handleClick({ vertical: 'bottom', horizontal: 'center' })
                  return;
@@ -349,13 +350,13 @@ class TrackerHalfMoonController extends Component {
                 return;
                 } 
             } else {
-            if (controllerState.tracker_data.find(item => item.tracker_runName === controllerState.tracker_runName) && controllerState.tracker_data.find(item => item.tracker_partBarcode === controllerState.tracker_partBarcode)){
+            if (/*controllerState.tracker_data.find(item => item.tracker_runName === controllerState.tracker_runName) &&*/ controllerState.tracker_data.find(item => item.tracker_partBarcode === controllerState.tracker_partBarcode) && controllerState.tracker_data.find(item => item.tracker_fluteType === controllerState.tracker_fluteType) && controllerState.tracker_data.find(item => item.tracker_hmStructType === controllerState.tracker_hmStructType)){
                 //Snackbar goes here. Inform that this one already `add`ed.
                 this.handleClick({ vertical: 'bottom', horizontal: 'center' })
                 return;
             } else {
                 controllerState.tracker_data.push({ tracker_runTypeNumber: controllerState.tracker_runTypeNumber, tracker_runName: controllerState.tracker_runName,
-                    tracker_partBarcode: controllerState.tracker_partBarcode, tracker_id: controllerState.tracker_partBarcode + "." + controllerState.tracker_runName});
+                    tracker_partBarcode: controllerState.tracker_partBarcode, tracker_fluteType: controllerState.tracker_fluteType, tracker_hmStructType: controllerState.tracker_hmStructType, tracker_id: controllerState.tracker_partBarcode + "-" + controllerState.tracker_fluteType+ "-" + controllerState.tracker_hmStructType});
                 this.props.updateState(controllerState);
                 return;
                 }
@@ -573,8 +574,8 @@ class TrackerHalfMoonController extends Component {
                     </div>
                     
                     <Button
-                        disabled={this.props.controllerState.tracker_runName === '' 
-                        && this.props.controllerState.tracker_runTypeNumber === ''}
+                        //disabled={this.props.controllerState.tracker_runName === '' 
+                        //&& this.props.controllerState.tracker_runTypeNumber === ''}
                         variant="contained"
                         className={classes.button}
                         onClick={this.onIDAdd}>
