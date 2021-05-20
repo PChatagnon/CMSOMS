@@ -73,8 +73,9 @@ const RESTHUB_URL = '/tracker-resthub';
 
 class TrackerHalfMoonController extends Component {
 
-    static controllerHeight = 370;
-
+    static controllerHeight = 400;
+    
+    
     constructor() {
         super();
         this.state = {
@@ -89,6 +90,8 @@ class TrackerHalfMoonController extends Component {
 
     static controllerInit(urlQuery, controller) {
 
+	let urlMetadata = "trker_int2r.c13560";
+   	let urlRuns = "trker_int2r.runs";
         let barcodeType = '', lastBarcodeType = '', id = '';
         let fluteType = '', lastFluteType = '';
         let structureType = '', lastStructureType = '';
@@ -117,8 +120,6 @@ class TrackerHalfMoonController extends Component {
         }
         
         let { url } = controller.configuration;
-        let urlMetadata = "trker_int2r.c13560";
-        let urlRuns = "trker_int2r.runs";
         console.log("url is "+url);
         return Resthub.json2("SELECT t.PART_BARCODE FROM " + urlMetadata + " t ORDER BY t.PART_BARCODE ", null, 1, 1, RESTHUB_URL)
             .then(resp => {
@@ -188,7 +189,7 @@ class TrackerHalfMoonController extends Component {
     }
 
     validateBarcodeType = (barcodeType) => {
-        return this.state.barcodeTypes.find(s => s === partBarcode);
+        return this.state.barcodeTypes.find(s => s === barcodeType);
         //return true;
     }
     
@@ -210,7 +211,7 @@ class TrackerHalfMoonController extends Component {
     
     
     validateFluteType = (fluteType) => {
-        return fluteType;
+         return this.state.fluteTypes.find(s => s === fluteType);
     }
     
     onFluteTypeChange = (searchText, index) => {
@@ -227,7 +228,7 @@ class TrackerHalfMoonController extends Component {
     }
     
     validateStructureType = (structureType) => {
-        return structureType;
+        return this.state.structureTypes.find(s => s === structureType);
     }
     
     onStructureTypeChange = (searchText, index) => {
@@ -245,7 +246,8 @@ class TrackerHalfMoonController extends Component {
 
     onBarcodeTypeUpdate = (searchText) => {
         this.updateBarcode(searchText);
-        Resthub.json2("SELECT DISTINCT t.SENSOR FROM " + this.props.configuration.url + " t WHERE t.SENSOR LIKE  '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
+        let urlMetadata = "trker_int2r.c13560";
+        Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.PART_BARCODE LIKE  '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
             .then(response => {
                 const barcodeTypes = response.data.data;
                 this.setState({ barcodeTypes: barcodeTypes.map(s => s.partBarcode), errMessage: '' });
@@ -254,7 +256,8 @@ class TrackerHalfMoonController extends Component {
     
      onFluteTypeUpdate = (searchText) => {
         this.updateFlute(searchText);
-        Resthub.json2("SELECT DISTINCT t.SENSOR FROM " + this.props.configuration.url + " t WHERE t.SENSOR LIKE  '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
+        let urlMetadata = "trker_int2r.c13560";
+        Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_FLUTE_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID LIKE  '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
             .then(response => {
                 const fluteTypes = response.data.data;
                 this.setState({ fluteTypes: fluteTypes.map(s => s.kindOfHmFluteId), errMessage: '' });
@@ -263,7 +266,8 @@ class TrackerHalfMoonController extends Component {
     
     onStructureTypeUpdate = (searchText) => {
         this.updateStructure(searchText);
-        Resthub.json2("SELECT DISTINCT t.SENSOR FROM " + this.props.configuration.url + " t WHERE t.SENSOR LIKE  '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
+        let urlMetadata = "trker_int2r.c13560";
+        Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_STRUCT_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '"+this.props.controllerState.tracker_fluteType+"' AND t.KIND_OF_HM_STRUCT_ID LIKE '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
             .then(response => {
                 const structureTypes = response.data.data;
                 this.setState({ structureTypes: structureTypes.map(s => s.kindOfHmStructId), errMessage: '' });
