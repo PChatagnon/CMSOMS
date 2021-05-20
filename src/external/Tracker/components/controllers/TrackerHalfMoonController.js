@@ -247,7 +247,7 @@ class TrackerHalfMoonController extends Component {
     onBarcodeTypeUpdate = (searchText) => {
         this.updateBarcode(searchText);
         let urlMetadata = "trker_int2r.c13560";
-        Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.PART_BARCODE LIKE  '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
+        Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '"+this.props.controllerState.tracker_fluteType+"' AND t.KIND_OF_HM_STRUCT_ID = '"+this.props.controllerState.tracker_hmStructType+"' AND t.PART_BARCODE LIKE  '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
             .then(response => {
                 const barcodeTypes = response.data.data;
                 this.setState({ barcodeTypes: barcodeTypes.map(s => s.partBarcode), errMessage: '' });
