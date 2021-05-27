@@ -167,7 +167,8 @@ class TrackerCurvesController extends Component {
     onSensorTypeChange = (searchText, index) => {
         const sensorType = this.validateSensorType(searchText);
         if (!sensorType) return;
-        this.updateSensorSerial(sensorType);               
+        this.updateSensorSerial(sensorType); 
+                  console.log("what is sensor "+sensorType);    
         return this.fetchRunNames(sensorType);
     }
     updateSensorSerial = sensorType => {

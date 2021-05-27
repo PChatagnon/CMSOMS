@@ -79,7 +79,7 @@ const RESTHUB_URL = '/tracker-resthub';
 
 class TrackerHalfMoonController extends Component {
 
-	static controllerHeight = 350;
+	static controllerHeight = 400;
 
 
 	constructor() {
@@ -122,6 +122,7 @@ class TrackerHalfMoonController extends Component {
 					tracker_partBarcode: barcodeType,
 					tracker_fluteType: fluteType,
 					tracker_hmStructType: structureType,
+					tracker_runName: run,
 					tracker_runTypeNumber: runTypeNumber,
 					tracker_data: selectedIds,
 					tracker_id: id,
@@ -170,6 +171,11 @@ class TrackerHalfMoonController extends Component {
 									.then(resp => {
 										runs = resp.data.data;
 
+										if (runs[0].runName) {
+											const lastRun = runs ? runs[0].runName : null;
+											run = "";//lastRun ? lastRun : 'None';
+											console.log("run " + run);
+										}
 										if (runs[0].runNumber) {
 											const last_runTypeNumber = runs ? runs[0].runNumber : null;
 											runTypeNumber = "";//last_runTypeNumber ? last_runTypeNumber : 'None';
@@ -196,41 +202,16 @@ class TrackerHalfMoonController extends Component {
 		let {
 			controllerState
 		} = this.props;
+		if (runs[0].runName) {
+			controllerState.tracker_runName = runs ? runs[0].runName : null;
+		}
 		if (runs[0].runNumber) {
 			controllerState.tracker_runTypeNumber = runs ? runs[0].runNumber : null;
 		}
 		this.props.updateState(controllerState);
 	}
-	
-	
-	emptyRuns = () => {
-		let {
-			controllerData
-		} = this.props;
-		controllerData.runs = null;
-		this.props.updateControllerData(controllerData);
-		let {
-			controllerState
-		} = this.props;
-		controllerState.tracker_runTypeNumber = null;
-		this.props.updateState(controllerState);
-	}
 
 	fetchRunNames = (barcodeType, fluteType, structureType) => {
-	
-		let emptyRuns = () => {
-		let {
-			controllerData
-		} = this.props;
-		controllerData.runs = [];
-		this.props.updateControllerData(controllerData);
-		let {
-			controllerState
-		} = this.props;
-		controllerState.tracker_runTypeNumber = [];
-		this.props.updateState(controllerState);
-		}
-	
 		let urlMetadata = "trker_int2r.c13560";
 		let urlDatasets = "trker_int2r.datasets";
 		let urlRuns = "trker_int2r.runs";
@@ -238,7 +219,7 @@ class TrackerHalfMoonController extends Component {
 			.then(response => {
 				const runs = response.data.data;
 				this.updateRuns(runs);
-			}).catch(err => emptyRuns());
+			});
 	}
 
 	/*fetchRunNames = (barcodeType) => { //to change
@@ -255,7 +236,6 @@ class TrackerHalfMoonController extends Component {
 	}
 
 	onBarcodeTypeChange = (searchText, index) => {
-		console.log("what is list of barcode in props " + this.state.barcodeTypes);
 		const barcodeType = this.validateBarcodeType(searchText);
 		const fluteType = this.props.controllerState.tracker_fluteType;
 		const structureType = this.props.controllerState.tracker_hmStructType;
@@ -305,13 +285,6 @@ class TrackerHalfMoonController extends Component {
 				});
 			});
 		
-		const barcodeType = this.validateBarcodeType(this.props.controllerState.tracker_partBarcode);
-		const structureType = this.validateStructureType(this.props.controllerState.tracker_hmStructType);
-		console.log("what is list of barcode type flute change " + barcodeType);
-		
-		this.fetchRunNames(barcodeType, fluteType, structureType);
-		
-		
 		return;
 	}
 
@@ -333,7 +306,7 @@ class TrackerHalfMoonController extends Component {
 		this.updateStructure(structureType);
 		
 		let urlMetadata = "trker_int2r.c13560";
-		Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + structureType+"'", null, null, null, RESTHUB_URL)
+		Resthub.json2("SELECT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + structureType+"'", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const barcodeTypes = response.data.data;
 				this.setState({
@@ -341,13 +314,6 @@ class TrackerHalfMoonController extends Component {
 					errMessage: ''
 				});
 			});
-			
-		const barcodeType = this.validateBarcodeType(this.props.controllerState.tracker_partBarcode);
-		const fluteType = this.validateFluteType(this.props.controllerState.tracker_fluteType);
-		
-		
-		this.fetchRunNames(barcodeType, fluteType, structureType);
-		
 		
 		return;
 	}
@@ -399,7 +365,17 @@ class TrackerHalfMoonController extends Component {
 			});
 	}
 
-	
+	onRunNameChange = event => {
+		let {
+			controllerState
+		} = this.props;
+		if (event.target.value != null) {
+			controllerState.tracker_runName = event.target.value;
+		} else {
+			controllerState.tracker_runName = '';
+		}
+		this.props.updateState(controllerState);
+	}
 
 	onRunTypeNumberChange = event => {
 		let {
@@ -416,7 +392,28 @@ class TrackerHalfMoonController extends Component {
 
 	}
 
-	
+	renderRunNames = () => {
+		const {
+			runs
+		} = this.props.controllerData;
+		if (runs.length > 0) {
+			if (runs[0].runName) {
+				console.log("what is run " + runs[0].runName)
+				if (!runs[0].runName.length) {
+					return <MenuItem value = {null} > None < /MenuItem>
+				}
+			} else {
+				console.log("what is run 1 " + runs[0].runName)
+				return <MenuItem value = {null} > None < /MenuItem>
+			}
+			return runs.map((data, index) => {
+				console.log("what is run 2 " + runs[0].runName)
+				return <MenuItem value = {data.runName}key = {index} > {`${data.runName}`} < /MenuItem>
+			});
+		} else {
+			return <MenuItem value = {null} > None < /MenuItem>
+		}
+	}
 
 	renderRunNumbers = () => {
 		const {
@@ -443,7 +440,18 @@ class TrackerHalfMoonController extends Component {
 	}
 
 
-	
+	onFilterChange = event => {
+		const {
+			value
+		} = event.target;
+		let {
+			controllerState
+		} = this.props;
+		controllerState.filterBy = value;
+		controllerState.tracker_runTypeNumber = '';
+		controllerState.tracker_runName = '';
+		this.props.updateState(controllerState);
+	}
 
 	onIDAdd = () => {
 		let {
@@ -461,10 +469,32 @@ class TrackerHalfMoonController extends Component {
 			} else {
 				controllerState.tracker_data.push({
 					tracker_runTypeNumber: controllerState.tracker_runTypeNumber,
+					tracker_runName: controllerState.tracker_runName,
 					tracker_partBarcode: controllerState.tracker_partBarcode,
 					tracker_fluteType: controllerState.tracker_fluteType,
 					tracker_hmStructType: controllerState.tracker_hmStructType,
-					tracker_id: controllerState.tracker_partBarcode + "-" + controllerState.tracker_fluteType + "-" + controllerState.tracker_hmStructType+"-" + controllerState.tracker_runTypeNumber
+					tracker_id: controllerState.tracker_partBarcode + "-" + controllerState.tracker_fluteType + "-" + controllerState.tracker_hmStructType
+				});
+				this.props.updateState(controllerState);
+				return;
+			}
+		} else {
+			if ( controllerState.tracker_data.find(item => item.tracker_runName === controllerState.tracker_runName) && controllerState.tracker_data.find(item => item.tracker_partBarcode === controllerState.tracker_partBarcode) && controllerState.tracker_data.find(item => item.tracker_fluteType === controllerState.tracker_fluteType) && controllerState.tracker_data.find(item => item.tracker_hmStructType === controllerState.tracker_hmStructType)) {
+				//Snackbar goes here. Inform that this one already `add`ed.
+				/*this.handleClick({
+					vertical: 'bottom',
+					horizontal: 'center'
+				})*/
+				window.alert("This configuration is already included");
+				return;
+			} else {
+				controllerState.tracker_data.push({
+					tracker_runTypeNumber: controllerState.tracker_runTypeNumber,
+					tracker_runName: controllerState.tracker_runName,
+					tracker_partBarcode: controllerState.tracker_partBarcode,
+					tracker_fluteType: controllerState.tracker_fluteType,
+					tracker_hmStructType: controllerState.tracker_hmStructType,
+					tracker_id: controllerState.tracker_partBarcode + "-" + controllerState.tracker_fluteType + "-" + controllerState.tracker_hmStructType
 				});
 				this.props.updateState(controllerState);
 				return;
@@ -548,8 +578,21 @@ class TrackerHalfMoonController extends Component {
                         openOnFocus={true}
                         listStyle={{ maxHeight: 300, overflow: 'auto' }}
                     /> 
+                    <FormControl component="fieldset">
+                        <RadioGroup
+                            name="filterBy"
+                            className={classes.radioGroup}
+                            value={filterBy}
+                            onChange={this.onFilterChange}
+                        >
+                            <FormControlLabel value="runType" control={<Radio color="primary" />} label="By Run Number" className={classes.radioButton} />
+                            <FormControlLabel value="runName" control={<Radio color="primary" />} label="By Run Name" className={classes.radioButton} />
+                        </RadioGroup>
+                    </FormControl>
+                
                     <div className={classes.inputContainer}>
                         <TextField
+                            disabled={filterBy !== 'runType'}
                             select
                             label="Run Number"
                             className={classes.selectField}
@@ -564,7 +607,25 @@ class TrackerHalfMoonController extends Component {
                             }}
                         >
                         {this.renderRunNumbers()}
-                         </TextField>
+                        </TextField>
+                        <br/>
+                        <TextField
+                            disabled={filterBy !== 'runName'}
+                            select
+                            label="Run Name"
+                            className={classes.selectField}
+                            InputProps={{ className: classes.textField }}
+                            value={this.props.controllerState.tracker_runName}
+                            onChange={this.onRunNameChange}
+                            suggestions={this.state.runs}
+                            SelectProps={{
+                                MenuProps: {
+                                    className: classes.itemMenu,
+                                }
+                            }}
+                        >
+                            {this.renderRunNames()}
+                        </TextField>
                     </div>
                 </div>
                 }
@@ -603,8 +664,21 @@ class TrackerHalfMoonController extends Component {
                         openOnFocus={true}
                         listStyle={{ maxHeight: 300, overflow: 'auto' }}
                     /> 
+                    <FormControl component="fieldset">
+                        <RadioGroup
+                            name="filterBy"
+                            className={classes.radioGroup}
+                            value={filterBy}
+                            onChange={this.onFilterChange}
+                        >
+                            <FormControlLabel value="runType" control={<Radio color="primary" />} label="By Run Number" className={classes.radioButton} />
+                            <FormControlLabel value="runName" control={<Radio color="primary" />} label="By Run Name" className={classes.radioButton} />
+                        </RadioGroup>
+                    </FormControl>
+                
                     <div className={classes.inputContainer}>
                         <TextField
+                            disabled={filterBy !== 'runType'}
                             select
                             label="Run Number"
                             className={classes.selectField}
@@ -620,7 +694,26 @@ class TrackerHalfMoonController extends Component {
                         >
                         {this.renderRunNumbers()}
                         </TextField>
+                        <br/>
+                        <TextField
+                            disabled={filterBy !== 'runName'}
+                            select
+                            label="Run Name"
+                            className={classes.selectField}
+                            InputProps={{ className: classes.textField }}
+                            value={this.props.controllerState.tracker_runName}
+                            onChange={this.onRunNameChange}
+                            suggestions={this.state.runs}
+                            SelectProps={{
+                                MenuProps: {
+                                    className: classes.itemMenu,
+                                }
+                            }}
+                        >
+                            {this.renderRunNames()}
+                        </TextField>
                     </div>
+                    
                     <Button
                         //disabled={this.props.controllerState.tracker_runName === '' 
                         //&& this.props.controllerState.tracker_runTypeNumber === ''}
