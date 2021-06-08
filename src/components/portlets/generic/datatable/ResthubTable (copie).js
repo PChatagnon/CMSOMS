@@ -167,7 +167,7 @@ class ResthubTable extends Component {
                         this.columns.columns = [...tableColumns];
                     })
                     .then(() => this.filterEmptyCol())
-                    	.then(() => this.loadData());
+                    	.then((listColumn) => {console.log("listColumn ici "+listColumn);console.log("je suis ici ");this.loadData(this.props.query,listColumn)});
             }).catch(error => this.props.onFailure(error));
     }
 
@@ -185,7 +185,7 @@ class ResthubTable extends Component {
 	
 	//return 't.' + c.title;
 	
-	//if (!c.nullable){return 't.' + c.title + ',';}
+	if (!c.nullable){return 't.' + c.title + ',';}
 	
     	return Resthub.json2(sql, sqlParams, null, null, this.resthubUrl).then(
 	(resp)=>{
@@ -193,11 +193,9 @@ class ResthubTable extends Component {
 	counts = respData.length ? respData.map(s => s.countcolumn) : null;
 	count = counts ? counts[0] : null;
 
-        //if (count>0 ){return 't.' + c.title + ',';}      
-        //else {return ''};
-        
-         return (!c.nullable || count>0);      
-  
+        if (count>0 ){return 't.' + c.title + ',';}      
+        else {return ''};
+      
 	}
 	);
          
@@ -244,24 +242,18 @@ class ResthubTable extends Component {
     			//}, 1000);
   		});
 
-	const funcs = columns.map(c => async () => await promiseExample(c,sqlParams));
+	const funcs = columns.map((c,index) => async () => await promiseExample(c,sqlParams));
 	
 	return serializePromise(funcs).then(res => {
   		console.log('res', res);
-  		//listColumn=res.join(' ');
-  		//console.log('listColumn ', listColumn);
-  		//if(listColumn.endsWith(', ')){console.log("je suis dans le bug");listColumn=listColumn.slice(0, -2);}
-
+  		listColumn=res.join(' ');
+  		console.log('listColumn ', listColumn);
+  		if(listColumn.endsWith(', ')){console.log("je suis dans le bug");listColumn=listColumn.slice(0, -2);}
+  		
+  		//var newStr = listColumn.substring(0, listColumn.length - 2);
+  		
   		console.log("je suis après le bug "+listColumn);
-  		
-  		const filteredColumns = [];
-  		res.map((val, index) => {if(val) return filteredColumns.push(columns[index]); else return; });
-  		
-  		console.log("je suis après le bug 1");
-                console.log(filteredColumns);   
-                  console.log("je suis après le bug 2 ");
-                this.columns.columns = filteredColumns;
-                return;
+  		return listColumn;
 	});
 	
     	
@@ -269,7 +261,7 @@ class ResthubTable extends Component {
 
  
      
-     createQuery = (sqlParams) => {
+     createQuery = (sqlParams,listColumns) => {
         if (this.params.queryId) return Promise.resolve();
 	
         const { orderBy, order, filter, rowSize } = this.params;
@@ -279,16 +271,16 @@ class ResthubTable extends Component {
         // SELECT
         const diff = difference(Object.keys(tableColumns), columns.map(c => c.name));
 
-        if (columns.length && diff.length) {
+       /* if (columns.length && diff.length) {
             
             //.map(this.checkColumn)
             //sql += columns.map( (label)=>this.checkColumn(label,sqlParams)).join(','); // Appends "t." to column names
             sql += columns.map((column)=>'t.' + column.title).join(','); // Appends "t." to column names
         }
-        else sql += ' * ';
+        else sql += ' * ';*/
 
-	
-	
+	sql+=listColumns;
+	console.log("dans createQuery with sql list "+	listColumns);
 		console.log("dans createQuery with sql  "+	sql);
         // FROM
         sql += ` FROM ( ${this.props.configuration.query} ) t `;
@@ -531,7 +523,7 @@ class ResthubTable extends Component {
             .catch(error => this.props.onFailure(error));
     }
 
-    loadData = (query = this.props.query) => {
+    loadData = (query = this.props.query,listColumns) => {
         this.props.showLoader();
 
         const { configuration } = this.props;
@@ -549,7 +541,7 @@ class ResthubTable extends Component {
                 }
             });
         }
-        return this.createQuery(sqlParams).then(() => this.fetchData(sqlParams));
+        return this.createQuery(sqlParams,listColumns).then(() => this.fetchData(sqlParams));
     }
     
     /*

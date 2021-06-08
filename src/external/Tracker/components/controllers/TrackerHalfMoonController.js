@@ -89,6 +89,7 @@ class TrackerHalfMoonController extends Component {
 			barcodeTypes: [],
 			fluteTypes: [],
 			structureTypes: [],
+			configTypes: [],
 			url: '',
 			tab: "simple"
 		}
@@ -106,6 +107,8 @@ class TrackerHalfMoonController extends Component {
 			lastFluteType = '';
 		let structureType = '',
 			lastStructureType = '';
+		let configType = '',
+			lastConfigType = '';
 		let run = '',
 			runs = [];
 		let runTypeNumber = '';
@@ -122,6 +125,7 @@ class TrackerHalfMoonController extends Component {
 					tracker_partBarcode: barcodeType,
 					tracker_fluteType: fluteType,
 					tracker_hmStructType: structureType,
+					tracker_hmConfigType: configType,
 					tracker_runTypeNumber: runTypeNumber,
 					tracker_data: selectedIds,
 					tracker_id: id,
@@ -159,23 +163,32 @@ class TrackerHalfMoonController extends Component {
 						lastStructureType = structureTypes ? structureTypes[0] : null;
 						structureType = "";//lastStructureType ? lastStructureType : null
 						console.log("structure type " + structureType);
-						return Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + structureType + "' ORDER BY t.PART_BARCODE ", null, 1, 1, RESTHUB_URL)
+						return Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_CONFIG_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + fluteType + "'AND t.KIND_OF_HM_STRUCT_ID = '" + structureType + "'", null, null, null, RESTHUB_URL)
 							.then(resp => {
 								const respData = resp.data.data;
-								const barcodeTypes = respData.length ? respData.map(s => s.partBarcode) : null;
-								lastBarcodeType = barcodeTypes ? barcodeTypes[0] : null;
-								barcodeType = "";//lastBarcodeType ? lastBarcodeType : null;
-								console.log("barcode  " + barcodeType);
-								return Resthub.json2("SELECT DISTINCT r.run_number, r.name FROM " + urlRuns + " r, " + urlDatasets + " d, " + urlMetadata + " m where m.part_barcode='" + barcodeType + "' and m.kind_of_hm_flute_id = '" + fluteType + "' and m.KIND_OF_HM_STRUCT_ID= '" + structureType + "'  and m.condition_data_set_id = d.id and d.run_id=r.id ", null, null, null, RESTHUB_URL)
+								const configTypes = respData.length ? respData.map(s => s.kindOfHmConfigId) : null;
+								lastConfigType = configTypes ? configTypes[0] : null;
+								configType = "";//lastConfigType ? lastConfigType : null
+								console.log("config type " + configType);
+						
+								return Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + structureType  + "' AND t.KIND_OF_HM_CONFIG_ID = '" + configType + "' ORDER BY t.PART_BARCODE ", null, 1, 1, RESTHUB_URL)
 									.then(resp => {
-										runs = resp.data.data;
+										const respData = resp.data.data;
+										const barcodeTypes = respData.length ? respData.map(s => s.partBarcode) : null;
+										lastBarcodeType = barcodeTypes ? barcodeTypes[0] : null;
+										barcodeType = "";//lastBarcodeType ? lastBarcodeType : null;
+										console.log("barcode  " + barcodeType);
+										return Resthub.json2("SELECT DISTINCT r.run_number, r.name FROM " + urlRuns + " r, " + urlDatasets + " d, " + urlMetadata + " m where m.part_barcode='" + barcodeType + "' and m.kind_of_hm_flute_id = '" + fluteType + "' and m.KIND_OF_HM_STRUCT_ID= '" + structureType + "' AND t.KIND_OF_HM_CONFIG_ID = '" + configType + "'  and m.condition_data_set_id = d.id and d.run_id=r.id ", null, null, null, RESTHUB_URL)
+											.then(resp => {
+												runs = resp.data.data;
 
-										if (runs[0].runNumber) {
-											const last_runTypeNumber = runs ? runs[0].runNumber : null;
-											runTypeNumber = "";//last_runTypeNumber ? last_runTypeNumber : 'None';
-											console.log("run type " + runTypeNumber);
-										}
-										return initData();
+												if (runs[0].runNumber) {
+													const last_runTypeNumber = runs ? runs[0].runNumber : null;
+													runTypeNumber = "";//last_runTypeNumber ? last_runTypeNumber : 'None';
+													console.log("run type " + runTypeNumber);
+												}
+												return initData();
+											})
 									})
 							})
 					})
@@ -216,7 +229,7 @@ class TrackerHalfMoonController extends Component {
 		this.props.updateState(controllerState);
 	}
 
-	fetchRunNames = (barcodeType, fluteType, structureType) => {
+	fetchRunNames = (barcodeType, fluteType, structureType, configType) => {
 	
 		let emptyRuns = () => {
 		let {
@@ -234,7 +247,7 @@ class TrackerHalfMoonController extends Component {
 		let urlMetadata = "trker_int2r.c13560";
 		let urlDatasets = "trker_int2r.datasets";
 		let urlRuns = "trker_int2r.runs";
-		return Resthub.json2("SELECT DISTINCT r.run_number, r.name FROM " + urlRuns + " r, " + urlDatasets + " d, " + urlMetadata + " m where m.part_barcode='" + barcodeType + "' and m.kind_of_hm_flute_id = '" + fluteType + "' and m.KIND_OF_HM_STRUCT_ID= '" + structureType + "'  and m.condition_data_set_id = d.id and d.run_id=r.id ", null, null, null, RESTHUB_URL)
+		return Resthub.json2("SELECT DISTINCT r.run_number, r.name FROM " + urlRuns + " r, " + urlDatasets + " d, " + urlMetadata + " m where m.part_barcode='" + barcodeType + "' and m.kind_of_hm_flute_id = '" + fluteType + "' and m.KIND_OF_HM_STRUCT_ID= '" + structureType + "' AND m.KIND_OF_HM_CONFIG_ID = '" + configType + "'  and m.condition_data_set_id = d.id and d.run_id=r.id ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const runs = response.data.data;
 				this.updateRuns(runs);
@@ -259,12 +272,13 @@ class TrackerHalfMoonController extends Component {
 		const barcodeType = this.validateBarcodeType(searchText);
 		const fluteType = this.props.controllerState.tracker_fluteType;
 		const structureType = this.props.controllerState.tracker_hmStructType;
+		const configType = this.props.controllerState.tracker_hmConfigType;
 		console.log("what is barcode " + barcodeType);
 		if (!barcodeType) return;
 		this.updateBarcode(barcodeType);
 
 
-		this.fetchRunNames(barcodeType, fluteType, structureType);
+		this.fetchRunNames(barcodeType, fluteType, structureType, configType);
 	}
 
 	/*onBarcodeTypeChange = (searchText, index) => {
@@ -307,9 +321,10 @@ class TrackerHalfMoonController extends Component {
 		
 		const barcodeType = this.validateBarcodeType(this.props.controllerState.tracker_partBarcode);
 		const structureType = this.validateStructureType(this.props.controllerState.tracker_hmStructType);
+		const configType = this.validateConfigType(this.props.controllerState.tracker_hmConfigType);
 		console.log("what is list of barcode type flute change " + barcodeType);
 		
-		this.fetchRunNames(barcodeType, fluteType, structureType);
+		this.fetchRunNames(barcodeType, fluteType, structureType, configType);
 		
 		
 		return;
@@ -333,20 +348,20 @@ class TrackerHalfMoonController extends Component {
 		this.updateStructure(structureType);
 		
 		let urlMetadata = "trker_int2r.c13560";
-		Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + structureType+"'", null, null, null, RESTHUB_URL)
+		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_CONFIG_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + structureType+"'", null, null, null, RESTHUB_URL)
 			.then(response => {
-				const barcodeTypes = response.data.data;
+				const configTypes = response.data.data;
 				this.setState({
-					barcodeTypes: barcodeTypes.map(s => s.partBarcode),
+					configTypes: configTypes.map(s => s.kindOfHmConfigId),
 					errMessage: ''
 				});
 			});
 			
 		const barcodeType = this.validateBarcodeType(this.props.controllerState.tracker_partBarcode);
 		const fluteType = this.validateFluteType(this.props.controllerState.tracker_fluteType);
+		const configType = this.validateConfigType(this.props.controllerState.tracker_hmConfigType);
 		
-		
-		this.fetchRunNames(barcodeType, fluteType, structureType);
+		this.fetchRunNames(barcodeType, fluteType, structureType, configType);
 		
 		
 		return;
@@ -359,11 +374,54 @@ class TrackerHalfMoonController extends Component {
 		controllerState.tracker_hmStructType = structureType;
 		this.props.updateState(controllerState);
 	}
+	
+	//config
+	
+	validateConfigType = (configType) => {
+		return this.state.configTypes.find(s => s === configType);
+	}
+
+	onConfigTypeChange = (searchText, index) => {
+		const configType = this.validateConfigType(searchText);
+		if (!configType) return;
+		this.updateConfig(configType);
+		
+		console.log("yooooo je suis la "+configType);
+		
+		let urlMetadata = "trker_int2r.c13560";
+		Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType+"'"+ " AND t.KIND_OF_HM_CONFIG_ID = '" + configType + "'", null, null, null, RESTHUB_URL)
+			.then(response => {
+				const barcodeTypes = response.data.data;
+				this.setState({
+					barcodeTypes: barcodeTypes.map(s => s.partBarcode),
+					errMessage: ''
+				});
+			});
+			
+		const barcodeType = this.validateBarcodeType(this.props.controllerState.tracker_partBarcode);
+		const fluteType = this.validateFluteType(this.props.controllerState.tracker_fluteType);
+		const structureType = this.validateStructureType(this.props.controllerState.tracker_hmStructType);
+		
+		this.fetchRunNames(barcodeType, fluteType, structureType, configType);
+		
+		
+		return;
+	}
+
+	updateConfig = configType => {
+		let {
+			controllerState
+		} = this.props;
+		controllerState.tracker_hmConfigType = configType;
+		this.props.updateState(controllerState);
+	}
+	
+	///
 
 	onBarcodeTypeUpdate = (searchText) => {
 		this.updateBarcode(searchText);
 		let urlMetadata = "trker_int2r.c13560";
-		Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND t.PART_BARCODE LIKE  '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
+		Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "' AND t.PART_BARCODE LIKE  '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const barcodeTypes = response.data.data;
 				this.setState({
@@ -399,6 +457,18 @@ class TrackerHalfMoonController extends Component {
 			});
 	}
 
+	onConfigTypeUpdate = (searchText) => {
+		this.updateConfig(searchText);
+		let urlMetadata = "trker_int2r.c13560";
+		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_STRUCT_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND  t.KIND_OF_HM_CONFIG_ID = LIKE '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
+			.then(response => {
+				const configTypes = response.data.data;
+				this.setState({
+					configTypes: configTypes.map(s => s.kindOfHmConfigId),
+					errMessage: ''
+				});
+			});
+	}
 	
 
 	onRunTypeNumberChange = event => {
@@ -459,12 +529,15 @@ class TrackerHalfMoonController extends Component {
 				window.alert("This configuration is already included");
 				return;
 			} else {
+				let title = controllerState.tracker_partBarcode + "-" + controllerState.tracker_fluteType + "-" + controllerState.tracker_hmStructType+ "-" + controllerState.tracker_runTypeNumber;
+				if(controllerState.tracker_hmConfigType!="Not Used"){title = controllerState.tracker_partBarcode + "-" + controllerState.tracker_fluteType + "-" + controllerState.tracker_hmStructType+ "-" + controllerState.tracker_hmConfigType+"-" + controllerState.tracker_runTypeNumber;}
 				controllerState.tracker_data.push({
 					tracker_runTypeNumber: controllerState.tracker_runTypeNumber,
 					tracker_partBarcode: controllerState.tracker_partBarcode,
 					tracker_fluteType: controllerState.tracker_fluteType,
 					tracker_hmStructType: controllerState.tracker_hmStructType,
-					tracker_id: controllerState.tracker_partBarcode + "-" + controllerState.tracker_fluteType + "-" + controllerState.tracker_hmStructType+"-" + controllerState.tracker_runTypeNumber
+					tracker_hmConfigType: controllerState.tracker_hmConfigType,
+					tracker_id: title
 				});
 				this.props.updateState(controllerState);
 				return;
@@ -537,6 +610,17 @@ class TrackerHalfMoonController extends Component {
                         openOnFocus={true}
                         listStyle={{ maxHeight: 300, overflow: 'auto' }}
                     /> 
+                     <AutoComplete
+                        label='Config'
+                        value={this.props.controllerState.tracker_hmConfigType}
+                        suggestions={this.state.configTypes}
+                        onInputChange={this.onConfigTypeUpdate}
+                        onValueChange={this.onConfigTypeChange}
+                        style={styles.autoComplete}
+                        maxSearchResults={300}
+                        openOnFocus={true}
+                        listStyle={{ maxHeight: 300, overflow: 'auto' }}
+                    /> 
                     <AutoComplete
                         label='HalfMoon BarCode'
                         value={this.props.controllerState.tracker_partBarcode}
@@ -587,6 +671,17 @@ class TrackerHalfMoonController extends Component {
                         suggestions={this.state.structureTypes}
                         onInputChange={this.onStructureTypeUpdate}
                         onValueChange={this.onStructureTypeChange}
+                        style={styles.autoComplete}
+                        maxSearchResults={300}
+                        openOnFocus={true}
+                        listStyle={{ maxHeight: 300, overflow: 'auto' }}
+                    /> 
+                     <AutoComplete
+                        label='Config'
+                        value={this.props.controllerState.tracker_hmConfigType}
+                        suggestions={this.state.configTypes}
+                        onInputChange={this.onConfigTypeUpdate}
+                        onValueChange={this.onConfigTypeChange}
                         style={styles.autoComplete}
                         maxSearchResults={300}
                         openOnFocus={true}
