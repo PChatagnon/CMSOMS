@@ -66,58 +66,6 @@ class ResthubTable extends Component {
             this.loadData(nextQuery);
         });
     }
-/*
-    loadMeta = () => {
-        const { configuration } = this.props;
-        return Resthub.query("SELECT * FROM ( " + configuration.query + " ) t  ", this.resthubUrl)
-            .then(response => {
-                return Resthub.meta(response.data, this.resthubUrl)
-                    .then(response => {
-                    	console.log(response);
-                        this.columns.tableColumns = response.data.columns.map(column => {
-                            return {
-                                title: column.name,
-                                name: column.jname,
-                                label: column.name,
-                                type: column.type.toLowerCase(),
-                                description: null,
-                                units: null,
-                                sortable: true,
-                            }
-                        });
-                        const { tableColumns } = this.columns;
-			console.log(tableColumns);
-                        // Load rowSize from cookie
-                        const rowSizeCookie = cookie.load(this.rowSizeCookieName);
-                        this.params.rowSize = rowSizeCookie ? parseInt(rowSizeCookie, 10) : this.params.rowSize;
-                        this.showResetBtn = rowSizeCookie ? true : false;
-
-                        // Load columns from cookie
-                        const cookieColumns = cookie.load(this.columnsCookieName) || null;
-                        if (cookieColumns) {
-			    const filteredColumns = cookieColumns.map(column => tableColumns.find(c => c.name === column));
-                            this.columns.columns = filteredColumns;
-                            this.showResetBtn = true;
-                            return;
-                        }
-
-                        // Load columns from portlet config 
-                        const { columns } = configuration;
-                        if (columns && columns.length) {
-                        //console.log("In config");
-                        //console.log(columns);
-                           const filteredColumns = columns.map(column => {if(tableColumns.find(c => c.name === column.name)) return column; });
-                            console.log(filteredColumns);     
-                            this.columns.columns = filteredColumns;
-                            return;
-                        }
-                        // Load all columns
-                        this.columns.columns = [...tableColumns];
-                    })
-                    .then(() => this.loadData());
-            }).catch(error => this.props.onFailure(error));
-    }
-  */  
     
     loadMeta = () => {
         const { configuration } = this.props;
@@ -174,7 +122,7 @@ class ResthubTable extends Component {
 
 
 
-// This function counts the number of entries in a column
+// This function counts the number of entries in a column and filter them depending the count 
      checkColumn = (c,sqlParams) => {
     	
     	let sql = 'SELECT ';
@@ -183,19 +131,12 @@ class ResthubTable extends Component {
     	let count=0;
     	let counts= [];
 	
-	//return 't.' + c.title;
-	
-	//if (!c.nullable){return 't.' + c.title + ',';}
-	
     	return Resthub.json2(sql, sqlParams, null, null, this.resthubUrl).then(
 	(resp)=>{
 	const respData = resp.data.data;
 	counts = respData.length ? respData.map(s => s.countcolumn) : null;
 	count = counts ? counts[0] : null;
 
-        //if (count>0 ){return 't.' + c.title + ',';}      
-        //else {return ''};
-        
          return (!c.nullable || count>0);      
   
 	}
@@ -203,6 +144,7 @@ class ResthubTable extends Component {
          
     }
 
+//Apply to all columns and wait for all response for every column
     filterEmptyCol = () =>{
     
      this.props.showLoader();
@@ -238,28 +180,14 @@ class ResthubTable extends Component {
 
   	const promiseExample = (c,sqlParams) =>
   		new Promise((res) => {
-			//setTimeout(() => {
-	  		console.log('resolved ', c);
 	  		res(this.checkColumn(c,sqlParams));
-    			//}, 1000);
   		});
 
 	const funcs = columns.map(c => async () => await promiseExample(c,sqlParams));
 	
 	return serializePromise(funcs).then(res => {
-  		console.log('res', res);
-  		//listColumn=res.join(' ');
-  		//console.log('listColumn ', listColumn);
-  		//if(listColumn.endsWith(', ')){console.log("je suis dans le bug");listColumn=listColumn.slice(0, -2);}
-
-  		console.log("je suis après le bug "+listColumn);
-  		
   		const filteredColumns = [];
   		res.map((val, index) => {if(val) return filteredColumns.push(columns[index]); else return; });
-  		
-  		console.log("je suis après le bug 1");
-                console.log(filteredColumns);   
-                  console.log("je suis après le bug 2 ");
                 this.columns.columns = filteredColumns;
                 return;
 	});
@@ -280,9 +208,7 @@ class ResthubTable extends Component {
         const diff = difference(Object.keys(tableColumns), columns.map(c => c.name));
 
         if (columns.length && diff.length) {
-            
-            //.map(this.checkColumn)
-            //sql += columns.map( (label)=>this.checkColumn(label,sqlParams)).join(','); // Appends "t." to column names
+          
             sql += columns.map((column)=>'t.' + column.title).join(','); // Appends "t." to column names
         }
         else sql += ' * ';
@@ -324,192 +250,7 @@ class ResthubTable extends Component {
             });
     }
     
-    /*createQuery = (sqlParams) => {
-        if (this.params.queryId) return Promise.resolve();
-	
-        const { orderBy, order, filter, rowSize } = this.params;
-        const { columns, tableColumns } = this.columns;
-        let sql = 'SELECT ';
 
-        // SELECT
-        const diff = difference(Object.keys(tableColumns), columns.map(c => c.name));
-
-        if (columns.length && diff.length) {
-            
-            //.map(this.checkColumn)
-            //sql += columns.map( (label)=>this.checkColumn(label,sqlParams)).join(','); // Appends "t." to column names
-            sql += columns.map((column)=>'t.' + column.title).join(','); // Appends "t." to column names
-        }
-        else sql += ' * ';
-
-        // FROM
-        sql += ` FROM ( ${this.props.configuration.query} ) t `;
-
-        // WHERE
-        const filterColumn = filter ? tableColumns.find(c => c.name === filter[0].attribute) : null;
-        if (filterColumn) {
-            const title = filterColumn.type === 'string' ? `LOWER (t.${filterColumn.title})` : `t.${filterColumn.title}`;
-            const value = filter[0].value.toLowerCase();
-            sql += ` WHERE ${title} LIKE '%${value}%' `;
-        }
-
-        // ORDER BY
-        if (orderBy) {
-            const orderColumn = tableColumns.find(c => c.name === orderBy);
-            this.params.orderBy = orderColumn.name;
-            this.params.order = order;
-            sql += orderColumn ? ` ORDER BY t.${orderColumn.title} ${order}` : '';
-        }
-        
-        console.log('sql '+sql);
-        
-        return Resthub.query(sql, this.resthubUrl)
-            .then(response => {
-                const queryId = response.data;
-                return Resthub.count(queryId, sqlParams, this.resthubUrl)
-                    .then(countResponse => {
-                        const totalCount = countResponse.data > 0 ? countResponse.data : 1;
-                        this.params.queryId = queryId;
-                        this.params.count = totalCount;
-                        this.params.pages = Math.ceil(totalCount / rowSize);
-                    });
-            });
-    }*/
-    
-    /*
-     listColumns = (sqlParams) => {
-        if (this.params.queryId) return Promise.resolve();
-	
-        const { orderBy, order, filter, rowSize } = this.params;
-        const { columns, tableColumns } = this.columns;
-        let sql = 'SELECT ';
-
-        // SELECT
-        const diff = difference(Object.keys(tableColumns), columns.map(c => c.name));
-
-        if (columns.length && diff.length) {
-            sql += columns.map( (label)=>this.checkColumn(label,sqlParams)).join(', '); // Appends "t." to column names
-        }
-        else sql += ' * ';
-        
-        return sql;
-     }
-    
-     createQuery = (sqlParams) => {
-        //if (this.params.queryId) return Promise.resolve();
-	
-	
-        return this.listColumns(sqlParams).then(
-        
-        	(sql) => {
-
-       		 // WHERE
-        	const filterColumn = filter ? tableColumns.find(c => c.name === filter[0].attribute) : null;
-        	if (filterColumn) {
-            		const title = filterColumn.type === 'string' ? `LOWER (t.${filterColumn.title})` : `t.${filterColumn.title}`;
-            		const value = filter[0].value.toLowerCase();
-            		sql += ` WHERE ${title} LIKE '%${value}%' `;
-        	}
-
-        	// ORDER BY
-        	if (orderBy) {
-            		const orderColumn = tableColumns.find(c => c.name === orderBy);
-            		this.params.orderBy = orderColumn.name;
-            		this.params.order = order;
-            		sql += orderColumn ? ` ORDER BY t.${orderColumn.title} ${order}` : '';
-        	}
-        
-        	console.log('sql '+sql);
-        
-        	return Resthub.query(sql, this.resthubUrl)
-           	 	.then(response => {
-               		 const queryId = response.data;
-               	 	return Resthub.count(queryId, sqlParams, this.resthubUrl)
-                    		.then(countResponse => {
-                        	const totalCount = countResponse.data > 0 ? countResponse.data : 1;
-                        	this.params.queryId = queryId;
-                        	this.params.count = totalCount;
-                        	this.params.pages = Math.ceil(totalCount / rowSize);
-                    		});
-           		 });
-            
-         	});
-    }
-    */
-    /*
-    addLabel = (columns,diff,sql,sqlParams) => {
-    
-    if (columns.length && diff.length) {
-            sql += columns.map( (label)=>this.checkColumn(label,sqlParams)).join(', '); // Appends "t." to column names
-        }
-        else sql += ' * ';
-        
-        return sql;
-    
-    }
-    */
-    /*
-    addLabel = (columns,diff,sql,sqlParams) => {
-    let sqlout = sql;
-    if (columns.length && diff.length) {
-            sqlout += columns.map( (label)=>this.checkColumn(label,sqlParams)).join(', '); // Appends "t." to column names
-        }
-        
-        else sqlout += ' * ';
-        
-        return sqlout;
-    
-    }
-    
-    createQuery = (sqlParams) => {
-        if (this.params.queryId) return Promise.resolve();
-	
-        const { orderBy, order, filter, rowSize } = this.params;
-        const { columns, tableColumns } = this.columns;
-        let sql = 'SELECT ';
-
-        // SELECT
-        const diff = difference(Object.keys(tableColumns), columns.map(c => c.name));
-       
-        return this.addLabel(columns,diff,sql,sqlParams)
-        	.then( sql=>{
-        
-       		// FROM
-        	sql += ` FROM ( ${this.props.configuration.query} ) t `;
-
-        	// WHERE
-        	const filterColumn = filter ? tableColumns.find(c => c.name === filter[0].attribute) : null;
-        	if (filterColumn) {
-            	const title = filterColumn.type === 'string' ? `LOWER (t.${filterColumn.title})` : `t.${filterColumn.title}`;
-            	const value = filter[0].value.toLowerCase();
-            	sql += ` WHERE ${title} LIKE '%${value}%' `;
-        	}
-
-        	// ORDER BY
-        	if (orderBy) {
-            	const orderColumn = tableColumns.find(c => c.name === orderBy);
-            	this.params.orderBy = orderColumn.name;
-            	this.params.order = order;
-            	sql += orderColumn ? ` ORDER BY t.${orderColumn.title} ${order}` : '';
-        	}
-        
-        	console.log('sql '+sql);
-        
-        	return Resthub.query(sql, this.resthubUrl)
-            	.then(response => {
-                	const queryId = response.data;
-                	return Resthub.count(queryId, sqlParams, this.resthubUrl)
-                    	.then(countResponse => {
-                        	const totalCount = countResponse.data > 0 ? countResponse.data : 1;
-                        	this.params.queryId = queryId;
-                        	this.params.count = totalCount;
-                        	this.params.pages = Math.ceil(totalCount / rowSize);
-                    	});
-            	});
-       	});
-    }
-
-   */
 
     fetchData = (sqlParams) => {
         const { queryId, rowSize, page } = this.params;
@@ -551,28 +292,6 @@ class ResthubTable extends Component {
         }
         return this.createQuery(sqlParams).then(() => this.fetchData(sqlParams));
     }
-    
-    /*
-    loadData = (query = this.props.query) => {
-        this.props.showLoader();
-
-        const { configuration } = this.props;
-        let sqlParams = {};
-
-        if (configuration.parameters) {
-            Object.entries(configuration.parameters).forEach(([param, selector]) => {
-                try {
-                    if (query.hasOwnProperty(selector.selector)) {
-                        sqlParams[param] = query[selector.selector];
-                    }
-                }
-                catch (e) {
-                    console.log("problem with parameter" + param);
-                }
-            });
-        }
-        return this.createQuery(sqlParams).then(() => this.fetchData(sqlParams));
-    }*/
 
     onReset = () => {
         cookie.remove(this.columnsCookieName, { path: '/' });
