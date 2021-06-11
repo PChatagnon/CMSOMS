@@ -137,7 +137,7 @@ class ResthubTable extends Component {
 	counts = respData.length ? respData.map(s => s.countcolumn) : null;
 	count = counts ? counts[0] : null;
 
-         return (!c.nullable || count>0);      
+         return (!c.isHidden || count>0);      
   
 	}
 	);

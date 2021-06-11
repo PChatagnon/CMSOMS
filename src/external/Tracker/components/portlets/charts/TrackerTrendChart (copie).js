@@ -29,23 +29,18 @@ const RESTHUB_URL = '/tracker-resthub';
 
 
 
-class TrackerCurvesChart extends Component {
+class TrackerTrendChart extends Component {
 
     constructor(props) {
         super(props);
         this.chart = null;
-        this.id = generateId('TrackerCurvesChart');
+        this.id = generateId('TrackerTrendChart');
         this.yAxes = [];
         this.state = {
         	mode: '2D',
         	labelX: '',
-        	labelY: '',
-        	loadMeta: false
+        	labelY: ''
         }
-        
-        this.columns = {
-            columns: [] //list of selected columns
-        };
     }
 
     componentDidUpdate(prevProps) {
@@ -54,49 +49,9 @@ class TrackerCurvesChart extends Component {
         this.shouldResize();
     }
 
-    loadMeta = () => {
-        const { configuration } = this.props;
-        let sql = configuration.url;
-             Object.entries(this.props.query).forEach(e => {
-                if (e[1]===''){
-                    e[1]= null;
-                    sql = sql.replace(' = ' + e[0],' is ' + e[1] );
-                } else {
-                    sql = sql.replace(e[0], "'" + e[1] + "'");
-                }
-            });
-         console.log("HERERERERERE "+sql);
-        
-        return Resthub.query("SELECT * FROM ( " + sql + " ) meta  ", this.resthubUrl)
-            .then(response => {
-                return Resthub.meta(response.data, this.resthubUrl)
-                    .then(response => {
-                    	console.log("here in meta response");
-                    	console.log(response);
-                        this.columns = response.data.columns.map(column => {
-                            return {
-                                title: column.name,
-                                name: column.jname,
-                                label: column.name,
-                                type: column.type.toLowerCase(),
-                                description: null,
-                                units: null,
-                                sortable: true,
-                            }
-                        });
-                    })
-            }).catch(error => this.props.onFailure(error));
-    }
+
 
     loadData = (query = this.props.query) => {
-    	
-    	this.loadMeta().then(
-        () => {
-        console.log('columns');
-        console.log(this.columns);
-        this.setState({loadMeta: true})
-        console.log(this.state.loadMeta);
-    	
         this.props.showLoader();
 
         this.colorCount = 0;
@@ -197,13 +152,9 @@ class TrackerCurvesChart extends Component {
                 return this.props.hideLoader();
             }).catch(error => this.props.onFailure(error));
        }
-       
-       });
     }
 
-    showData = () => {
-     return;
-    }
+    
 
     componentDidMount() {
         let { configuration } = this.props;
@@ -245,9 +196,7 @@ class TrackerCurvesChart extends Component {
         };
 
         this.chart = new Highcharts.chart(this.id, options);
-        
         this.loadData();
-       
     }
 
     createYaxes = (configuration) => {
@@ -307,44 +256,37 @@ class TrackerCurvesChart extends Component {
 
     handleChangeX = (event) => {
       this.setState({labelX: event.target.value});
+      console.log("here"+this.state.labelX);
     };
     
     handleChangeY = (event) => {
       this.setState({labelY: event.target.value});
-     
+      console.log(this.state);
     };
-    
-    handleValidateClick = (event) => {
-      this.showData();
-    }
 
     handleLogScale = (event, isChecked) => {
         const type = isChecked ? 'logarithmic' : 'linear';
         this.chart.yAxis[0].update({ type: type });
-        console.log(this.state);
+        //console.log(this.state);
     }
     
     handleModeFrequency = (event, isChecked) => {
-    	//console.log(this.state);
         const type = isChecked ? 'Freq' : '2D';
         this.setState({mode: type})
+        //console.log(this.state);
     }
     
     handleMode2D = (event, isChecked) => {
         const type = isChecked ? '2D' : 'Freq';
         this.setState({mode: type})
-        //console.log(this.state);
+        //console.log("mode "+this.state.mode);
     }
     
    
     renderAxis = () => {
-    	    let empty ='No data';
-            if(this.state.loadMeta){
-            return this.columns.map((column) => {
-				return <MenuItem value = {column.name} key = {column.name} > {`${column.name}`} < /MenuItem>;
-			});
-            }	
-            else return <MenuItem value={empty}> {empty} </MenuItem>;
+        
+            return <MenuItem value={10}>djdjdjdjdjdjdjdjdj</MenuItem>;
+          		
         
     }
 
@@ -401,7 +343,9 @@ class TrackerCurvesChart extends Component {
           			style={{ marginTop: -10, marginLeft: 75 , minWidth: 200 }}
           			autoWidth
         		>
-        		{this.renderAxis()}
+          		<MenuItem value={10}>djdjdjdjdjdjdjdjdj</MenuItem>
+          		<MenuItem value={20}>Twenty</MenuItem>
+          		<MenuItem value={30}>Thirty</MenuItem>
         		</Select>
       		</FormControl>
             </div>
@@ -409,4 +353,4 @@ class TrackerCurvesChart extends Component {
     }
 }
 
-export default sizeMe({ monitorWidth: true })(TrackerCurvesChart);
+export default sizeMe({ monitorWidth: true })(TrackerTrendChart);

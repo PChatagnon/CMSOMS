@@ -86,6 +86,8 @@ class TrackerCurvesController extends Component {
 
     static controllerInit(urlQuery, controller) {
 
+	
+
         let sensorType = '', lastSensorType = '', id = '';
         let run = '', runs = [];
         let runTypeNumber = '';
