@@ -22,8 +22,11 @@ import InputLabel from '@material-ui/core/InputLabel';
 import MenuItem from '@material-ui/core/MenuItem';
 import Select from '@material-ui/core/Select';
 import Button from '@material-ui/core/Button';
-
-
+import SwapHorizIcon from '@material-ui/icons/SwapHoriz';
+import IconButton from '@material-ui/core/IconButton';
+import TextField from '@material-ui/core/TextField';
+import bellCurve from "highcharts/modules/histogram-bellcurve";
+bellCurve(Highcharts);
 
 const RESTHUB_URL = '/tracker-resthub';
 
@@ -38,9 +41,26 @@ class TrackerCurvesChart extends Component {
         this.yAxes = [];
         this.state = {
         	mode: '2D',
-        	labelX: '',
-        	labelY: '',
-        	loadMeta: false
+        	labelX: {
+                                title: '',
+                                name: '',
+                                label: '',
+                                type: '',
+                                description: null,
+                                units: null,
+                                sortable: true,
+                            },
+        	labelY: {
+                                title: '',
+                                name: '',
+                                label: '',
+                                type: '',
+                                description: null,
+                                units: null,
+                                sortable: true,
+                            },
+        	loadMeta: false,
+        	nbBins: 1
         }
         
         this.columns = {
@@ -92,26 +112,30 @@ class TrackerCurvesChart extends Component {
     	
     	this.loadMeta().then(
         () => {
-        console.log('columns');
-        console.log(this.columns);
+        
         this.setState({loadMeta: true})
-        console.log(this.state.loadMeta);
-    	
         this.props.showLoader();
 
         this.colorCount = 0;
         this.axisColor = 0;
+        
         // Remove all chart series without redrawing
         while (this.chart.series.length > 0)
             this.chart.series[0].remove(false);
 
-        this.chart.redraw();
+        this.chart.redraw(); 
 
         const { configuration } = this.props;
         this.sql = configuration.url;
+        
+        let sql3 = this.sql;    
+        if(this.AllowDisplay()) sql3= "SELECT data."+this.state.labelX.label+" "+ ", data."+ this.state.labelY.label +" "+" FROM ( " + this.sql + " ) data  ";
+  
+       this.create2Dplot(configuration)
+        
        if(query.tracker_data.length > 0){
            query.tracker_data.forEach(e =>{
-               let sql2 = this.sql
+               let sql2 = sql3;
                Object.entries(e).forEach(ef => {
                 if (ef[1]===''){
                     ef[1]= null;
@@ -121,17 +145,18 @@ class TrackerCurvesChart extends Component {
                 }
             })
             
-            console.log(sql2);
+            console.log("sql2: "+sql2);
                 const { xAxisObjectName, superImpose } = configuration;
                 Resthub.json2(sql2, null, null, null, configuration.resthubUrl)
             .then(resp => {
                 const data = resp.data.data;
+                
                 //let series = [];
                 let seria = {};
                 seria['name'] = e['tracker_id'];
                 seria['data'] = [];
                 data.forEach(d => {
-                    seria['data'].push([d[xAxisObjectName], d[superImpose]])
+                    seria['data'].push([d[this.state.labelX.name], d[this.state.labelY.name]])//[d[xAxisObjectName], d[superImpose]])
                 });
                 seria['tooltip'] = {
                     pointFormatter: function () {
@@ -141,7 +166,7 @@ class TrackerCurvesChart extends Component {
                 seria['color'] = Highcharts.getOptions().colors[this.colorCount]
                 this.colorCount = this.colorCount + 1;
                 this.chart.addSeries(seria);
-                this.chart.setTitle({text: query[configuration.paramForTitle]});
+                this.chart.setTitle({text: this.state.labelY.name+" VS "+ this.state.labelX.name });
                 this.chart.redraw();
                 if (!data.length)
                     return this.props.onEmpty();
@@ -150,43 +175,50 @@ class TrackerCurvesChart extends Component {
             }).catch(error => this.props.onFailure(error));
            })
        } else {
+       		let sql2 = sql3;
             Object.entries(this.props.query).forEach(e => {
                 if (e[1]===''){
                     e[1]= null;
-                    this.sql = this.sql.replace(' = ' + e[0],' is ' + e[1] );
+                    sql2 = sql2.replace(' = ' + e[0],' is ' + e[1] );
                 } else {
-                    this.sql = this.sql.replace(e[0], "'" + e[1] + "'");
+                    sql2 = sql2.replace(e[0], "'" + e[1] + "'");
                 }
             })
-            Resthub.json2(this.sql, null, null, null, configuration.resthubUrl)
+            console.log("sql2 prime: "+sql2);
+            Resthub.json2(sql2, null, null, null, configuration.resthubUrl)
             .then(resp => {
                 const data = resp.data.data;
                 let series = [];
+                console.log("configuration: ");
+                console.log(configuration);
+                console.log(query);
                 Object.entries(configuration.series).forEach(e => {
                     let seria = {};
-                    seria['useHTML'] = true;
-                    seria['name'] = e[1].name
+                    //seria['useHTML'] = true;
+                    seria['name'] = query.tracker_partBarcode;//e[1].name
                     seria['data'] = [];
-                    seria['dataAxis'] = configuration.yAxes[e[1].yAxis].yAxisObjectName
-                    seria['yAxis'] = e[1].yAxis;
+                    seria['dataAxis'] = configuration.yAxes[e[1].yAxis].yAxisObjectName//this.state.LabelX//
+                    seria['yAxis'] = e[1].yAxis;//this.state.labelY;//
                     seria['tooltip'] = {
                         pointFormatter: function () {
                             return `<span style='color: ${this.series.color}'>\u25CF</span> ${this.series.name}: <b>${this.y}</b><br />`;
                         }
                     }
-                    seria['color'] = this.yAxes[e[1].yAxis].labels.style.color;
+                    seria['color'] = Highcharts.getOptions().colors[this.colorCount]
                     series.push(seria);
                 });
                 data.forEach(d => {
                     series.forEach(s => {
-                        s.data.push([d[configuration.xAxisObjectName], d[s.dataAxis]])
+                        s.data.push([d[this.state.labelX.name], d[this.state.labelY.name]])
                     })
                 });
                 series.forEach(s => {
                     this.chart.addSeries(s, false)
                 })
-
-                this.chart.setTitle({text: query[configuration.paramForTitle]});
+		
+		console.log(series);
+	
+                this.chart.setTitle({text: this.state.labelY.name+" VS "+ this.state.labelX.name }); //query[configuration.paramForTitle]
 
                 this.chart.redraw();
 
@@ -200,15 +232,223 @@ class TrackerCurvesChart extends Component {
        
        });
     }
+    
+    loadDataFreq = (query = this.props.query) => {
+    	
+    	this.loadMeta().then(
+        () => {
+        
+        this.setState({loadMeta: true})
+        this.props.showLoader();
 
-    showData = () => {
-     return;
+        this.colorCount = 0;
+        this.axisColor = 0;
+        
+        // Remove all chart series without redrawing
+        while (this.chart.series.length > 0)
+            this.chart.series[0].remove(false);
+
+        this.chart.redraw(); 
+
+        const { configuration } = this.props;
+        this.sql = configuration.url;
+        
+        let sql3 = this.sql;
+        console.log("Allow display");
+        console.log(this.AllowDisplay());
+        
+        if(this.AllowDisplay()) sql3= "SELECT data."+this.state.labelX.label+" FROM ( " + this.sql + " ) data  ";
+        console.log("sql3: "+sql3);
+        
+       this.createFreqplot(configuration)
+        
+       if(query.tracker_data.length > 0){
+           query.tracker_data.forEach(e =>{
+               let sql2 = sql3;//this.sql
+               Object.entries(e).forEach(ef => {
+                if (ef[1]===''){
+                    ef[1]= null;
+                    sql2 = sql2.replace(' = ' + ef[0],' is ' + ef[1] );
+                } else {
+                    sql2 = sql2.replace(ef[0], "'" + ef[1] + "'");
+                }
+            })
+            
+            console.log("sql2: "+sql2);
+                const { xAxisObjectName, superImpose } = configuration;
+                Resthub.json2(sql2, null, null, null, configuration.resthubUrl)
+            .then(resp => {
+                const data = resp.data.data;
+                
+                //let series = [];
+                let seria = {};
+                seria['name'] = e['tracker_id'];
+                seria['data'] = [];
+                data.forEach(d => {
+                    seria['data'].push([d[this.state.labelX.name]])//[d[xAxisObjectName], d[superImpose]])
+                });
+                //this.chart.addSeries(seria);
+                this.chart.setTitle({text: this.state.labelX.name });
+                this.chart.redraw();
+                if (!data.length)
+                    return this.props.onEmpty();
+                this.chart.hideLoading();
+                return this.props.hideLoader();
+            }).catch(error => this.props.onFailure(error));
+           })
+       } else {
+       		let sql2 = sql3;
+            Object.entries(this.props.query).forEach(e => {
+                if (e[1]===''){
+                    e[1]= null;
+                    sql2 = sql2.replace(' = ' + e[0],' is ' + e[1] );
+                } else {
+                    sql2 = sql2.replace(e[0], "'" + e[1] + "'");
+                }
+            })
+            Resthub.json2(sql2, null, null, null, configuration.resthubUrl)
+            .then(resp => {
+                const data = resp.data.data;
+                let series = [];
+
+                let seria = {};
+                seria['name'] = query.tracker_partBarcode;//e[1].name
+                seria['data'] = [];
+                series.push(seria);
+                
+                data.forEach(d => {
+                    series.forEach(s => {
+                        s.data.push([d[this.state.labelX.name]])
+                    })
+                });
+                  
+                /*series.forEach(s => {
+                    this.chart.addSeries(s, false)
+                })*/
+		
+		console.log(series);
+	
+                this.chart.setTitle({text: this.state.labelX.name });
+
+                this.chart.redraw();
+
+                if (!data.length)
+                    return this.props.onEmpty();
+
+                this.chart.hideLoading();
+                return this.props.hideLoader();
+            }).catch(error => this.props.onFailure(error));
+       }
+       
+       });
+    }
+      
+    showData2D = () => {
+     this.loadData();
+    }
+    
+    showDataFreq = () => {
+     this.loadDataFreq();
     }
 
     componentDidMount() {
         let { configuration } = this.props;
 
         this.createYaxes(configuration)
+
+	let XAxis='';
+	if(this.state.labelX)XAxis=this.state.labelX.label;
+	
+        const options = {
+            chart: {
+                height: this.props.portletHeight - 50,
+                zoomType: 'xy',
+                panning: true,
+                panKey: 'shift',
+                type: 'column'
+            },
+            plotOptions: {
+                series: {
+                    pointStart: 0,
+                    lineWidth: 2
+                }
+            },
+            credits: {
+                enabled: false
+            },
+            title: {
+                text: null
+            },
+            yAxis: this.yAxes,
+            xAxis: {
+                pointStart: 0,
+                useHTML:true,
+                title: {
+                    text: XAxis
+                },
+            },
+            tooltip: {
+                shared: true
+            },
+            series: []
+        };
+
+        this.chart = new Highcharts.chart(this.id, options);
+        
+        this.loadData();
+        
+    }
+
+    createFreqplot = () => {
+    
+var data = [3.5, 3, 3.2, 3.1, 3.6, 3.9, 3.4, 3.4, 2.9, 3.1, 3.7, 3.4, 3, 3, 4, 4.4, 3.9, 3.5, 3.8, 3.8, 3.4, 3.7, 3.6, 3.3, 3.4, 3, 3.4, 3.5, 3.4, 3.2, 3.1, 3.4, 4.1, 4.2, 3.1, 3.2, 3.5, 3.6, 3, 3.4, 3.5, 2.3, 3.2, 3.5, 3.8, 3, 3.8, 3.2, 3.7, 3.3, 3.2, 3.2, 3.1, 2.3, 2.8, 2.8, 3.3, 2.4, 2.9, 2.7, 2, 3, 2.2, 2.9, 2.9, 3.1, 3, 2.7, 2.2, 2.5, 3.2, 2.8, 2.5, 2.8, 2.9, 3, 2.8, 3, 2.9, 2.6, 2.4, 2.4, 2.7, 2.7, 3, 3.4, 3.1, 2.3, 3, 2.5, 2.6, 3, 2.6, 2.3, 2.7, 3, 2.9, 2.9, 2.5, 2.8, 3.3, 2.7, 3, 2.9, 3, 3, 2.5, 2.9, 2.5, 3.6, 3.2, 2.7, 3, 2.5, 2.8, 3.2, 3, 3.8, 2.6, 2.2, 3.2, 2.8, 2.8, 2.7, 3.3, 3.2, 2.8, 3, 2.8, 3, 2.8, 3.8, 2.8, 2.8, 2.6, 3, 3.4, 3.1, 3, 3.1, 3.1, 3.1, 2.7, 3.2, 3.3, 3, 2.5, 3, 3.4, 3];
+
+        this.chart = new Highcharts.chart(this.id, {
+    
+    chart: {
+        height: this.props.portletHeight - 50
+    },
+    title: {
+        text: 'Highcharts Histogram'
+    },
+
+    xAxis: [{
+        title: { text:''},
+        alignTicks: false
+    }, {
+        title: { text: this.state.labelX.name },
+        alignTicks: false
+    }],
+
+    yAxis: [{
+        title: { text: '' }
+    }, {
+        title: { text: 'Counts' }
+    }],
+
+    //series: []
+    
+    series: [{
+        name: this.state.labelX.name,
+        type: 'histogram',
+        xAxis: 1,
+        yAxis: 1,
+        baseSeries: 's1',
+        zIndex: -1
+    }, {
+    	name: 'Input data',
+        data: data,
+        visible: false,
+        id: 's1'
+    }]
+    
+});
+
+
+    }
+    
+    create2Dplot = () => {
+        this.createYaxes()
 
         const options = {
             chart: {
@@ -235,7 +475,7 @@ class TrackerCurvesChart extends Component {
                 pointStart: 0,
                 useHTML:true,
                 title: {
-                    text: configuration.xAxisName
+                    text: this.state.labelX.label
                 },
             },
             tooltip: {
@@ -246,42 +486,51 @@ class TrackerCurvesChart extends Component {
 
         this.chart = new Highcharts.chart(this.id, options);
         
-        this.loadData();
-       
     }
 
-    createYaxes = (configuration) => {
-
-        let opposit = false;
-        var axisC = 0;
-        Object.entries(configuration.yAxes).forEach(entry => {
-
-            axisC = axisC + 1;
-            let x = entry[0]
-            if (x > 0 ) {
-                opposit = true;
-            } else {
-                opposit = false;
-            }
-            let obj = {labels: {
+    createCountaxes = () => {
+       this.yAxes.pop();
+       let obj = {labels: {
                 gridLineWidth: 0,
                 format: '{value}',
                 style: {
-                    color: entry[1].color
+                    color: "black"
                 }
             },
             title: {
                 useHTML:true,
-                text: entry[1].text,
+                text: "Counts",
                 reversed: false,
                 style: {
-                    color: entry[1].color
+                    color: "black"
                 }
             },
-            opposite: opposit
+            opposite: false
         }
         this.yAxes.push(obj);
-        })
+    }
+
+
+    createYaxes = () => {
+       this.yAxes.pop();
+       let obj = {labels: {
+                gridLineWidth: 0,
+                format: '{value}',
+                style: {
+                    color: "black"
+                }
+            },
+            title: {
+                useHTML:true,
+                text: this.state.labelY.label,
+                reversed: false,
+                style: {
+                    color: "black"
+                }
+            },
+            opposite: false
+        }
+        this.yAxes.push(obj);
     }
 
     componentWillUnmount() {
@@ -303,25 +552,60 @@ class TrackerCurvesChart extends Component {
         return newSize.width !== this.chart.chartWidth || newSize.height !== this.chart.chartHeight;
     }
     
+    AllowDisplay = () => {	
+     let display =(this.state.mode=='2D' && this.state.labelY.name!='' && this.state.labelX.name!='') || (this.state.mode=='Freq' && this.state.labelX.name!='');
+     return display;
+    }
     
+    swapLabel = () => {
+     let formerX = this.state.labelX;
+     let formerY = this.state.labelY;
+     this.setState({labelX: formerY});
+     this.setState({labelY: formerX});
+    }
 
     handleChangeX = (event) => {
-      this.setState({labelX: event.target.value});
+      if(this.state.labelY.label==event.target.value){this.setState({labelY: {
+                                title: '',
+                                name: '',
+                                label: '',
+                                type: '',
+                                description: null,
+                                units: null,
+                                sortable: true
+                            }});}
+      
+                            
+      this.setState({labelX: this.columns.find(c => c.label === event.target.value)});
+      
     };
     
     handleChangeY = (event) => {
-      this.setState({labelY: event.target.value});
+      if(this.state.labelX.label==event.target.value){this.setState({labelX: {
+                                title: '',
+                                name: '',
+                                label: '',
+                                type: '',
+                                description: null,
+                                units: null,
+                                sortable: true
+                            }});}
+       
+                          
+      this.setState({labelY: this.columns.find(c => c.label === event.target.value)});
      
     };
     
-    handleValidateClick = (event) => {
-      this.showData();
+    handleDisplayClick = (event) => {
+      if(this.state.mode=='2D')this.showData2D();
+      else if(this.state.mode=='Freq')this.showDataFreq();
     }
 
     handleLogScale = (event, isChecked) => {
         const type = isChecked ? 'logarithmic' : 'linear';
         this.chart.yAxis[0].update({ type: type });
         console.log(this.state);
+        console.log(this.AllowDisplay());
     }
     
     handleModeFrequency = (event, isChecked) => {
@@ -336,15 +620,28 @@ class TrackerCurvesChart extends Component {
         //console.log(this.state);
     }
     
+    handleBinChange = (event) => {
+    	this.setState({nbBins: event.target.value})
+    }
+    
    
     renderAxis = () => {
     	    let empty ='No data';
-            if(this.state.loadMeta){
+    	    let emptycol={
+                                title: '',
+                                name: '',
+                                label: '',
+                                type: '',
+                                description: null,
+                                units: null,
+                                sortable: true
+                            };
+            if(this.state.loadMeta && this.columns.length>0){
             return this.columns.map((column) => {
-				return <MenuItem value = {column.name} key = {column.name} > {`${column.name}`} < /MenuItem>;
+				return <MenuItem value ={column.label} > {`${column.label}`} < /MenuItem>;
 			});
             }	
-            else return <MenuItem value={empty}> {empty} </MenuItem>;
+            else return <MenuItem value={emptycol}> {empty} </MenuItem>;
         
     }
 
@@ -355,9 +652,10 @@ class TrackerCurvesChart extends Component {
             <div>
                 <div id={this.id} />
                 <FormControlLabel
+                    disabled={mode=='Freq'}
                     style={{ marginTop: -10, marginLeft: 5 }}
                     control={<Checkbox color="primary" onChange={this.handleLogScale} />}
-                    label="Logarithmic scale"
+                    label="Log scale"
                 />
                 <FormControl component="fieldset">
       			<RadioGroup row aria-label="Aggregate" name="Aggregate" defaultValue="2D">
@@ -367,6 +665,14 @@ class TrackerCurvesChart extends Component {
           		control={<Radio color="primary" onChange={this.handleModeFrequency}/>}
          		label="Frequency plot"
           		labelPlacement="start"
+        		/>
+        		<TextField 
+        			disabled={mode=='2D'}
+        		 	style={{ marginTop: -10, marginLeft: 20, maxWidth: 100}}
+        		 	id="bins" 
+        		 	label="Nb of bins" 
+        		 	variant="outlined" 
+        		 	onChange={this.handleBinChange}
         		/>
         		<FormControlLabel
         		style={{ marginTop: -10, marginLeft: 35 }}
@@ -382,7 +688,7 @@ class TrackerCurvesChart extends Component {
         		<Select
           			labelId="x_axis"
           			id="x_axis"
-          			value={this.state.labelX}
+          			value={this.state.labelX.label}
           			onChange={this.handleChangeX}
           			style={{ marginTop: -10, marginLeft: 75, minWidth: 200 }}
           			autoWidth
@@ -390,13 +696,22 @@ class TrackerCurvesChart extends Component {
         		{this.renderAxis()}
         		</Select>
         	</FormControl>
+      		
+      		<IconButton color="primary" onClick={this.swapLabel} 
+      			style={{ marginTop: -10, marginLeft: 20}}
+      			disabled={mode=='Freq'}
+      			onClick={this.swapLabel} 
+      			>
+          		<SwapHorizIcon />
+        	</IconButton>
+      		
         	<FormControl  component="fieldset">	
         		<InputLabel id="y_axis" style={{ marginTop: -10, marginLeft: 20}}>Y axis</InputLabel>
         		<Select
         			disabled={mode=='Freq'}
           			labelId="y_axis"
           			id="y_axis"
-          			value={this.state.labelY}
+          			value={this.state.labelY.label}
           			onChange={this.handleChangeY}
           			style={{ marginTop: -10, marginLeft: 75 , minWidth: 200 }}
           			autoWidth
@@ -404,6 +719,14 @@ class TrackerCurvesChart extends Component {
         		{this.renderAxis()}
         		</Select>
       		</FormControl>
+      		<Button variant="contained" 
+      			color="primary" 
+      			onClick={this.handleDisplayClick} 
+      			style={{ marginTop: -10, marginLeft: 20}}
+      			disabled={!this.AllowDisplay()}
+      		> 
+      			Display
+      		</Button>
             </div>
         );
     }
