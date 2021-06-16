@@ -8,20 +8,39 @@ import { generateId, setHighchartsLibURL } from '../../../../../utils/utils';
 import sizeMe from 'react-sizeme';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Checkbox from '@material-ui/core/Checkbox';
-
 HighchartsExporting(Highcharts);
 HighchartsOfflineExporting(Highcharts);
 setHighchartsLibURL(Highcharts);
+import { withStyles } from '@material-ui/core/styles';
+
+
+import Radio from '@material-ui/core/Radio';
+import RadioGroup from '@material-ui/core/RadioGroup';
+import FormControl from '@material-ui/core/FormControl';
+import FormLabel from '@material-ui/core/FormLabel';
+import InputLabel from '@material-ui/core/InputLabel';
+import MenuItem from '@material-ui/core/MenuItem';
+import Select from '@material-ui/core/Select';
+import Button from '@material-ui/core/Button';
+
+
 
 const RESTHUB_URL = '/tracker-resthub';
 
-class TrackerCurvesChart extends Component {
+
+
+class TrackerTrendChart extends Component {
 
     constructor(props) {
         super(props);
         this.chart = null;
-        this.id = generateId('TrackerCurvesChart');
+        this.id = generateId('TrackerTrendChart');
         this.yAxes = [];
+        this.state = {
+        	mode: '2D',
+        	labelX: '',
+        	labelY: ''
+        }
     }
 
     componentDidUpdate(prevProps) {
@@ -29,6 +48,8 @@ class TrackerCurvesChart extends Component {
         this.props.shouldRefresh(this.props, this.loadData);
         this.shouldResize();
     }
+
+
 
     loadData = (query = this.props.query) => {
         this.props.showLoader();
@@ -40,10 +61,6 @@ class TrackerCurvesChart extends Component {
             this.chart.series[0].remove(false);
 
         this.chart.redraw();
-
-	console.log("props query");
-	console.log(this.props.query);
-	console.log(this.props);
 
         const { configuration } = this.props;
         this.sql = configuration.url;
@@ -88,7 +105,6 @@ class TrackerCurvesChart extends Component {
             }).catch(error => this.props.onFailure(error));
            })
        } else {
-       	    console.log("avant "+this.sql);
             Object.entries(this.props.query).forEach(e => {
                 if (e[1]===''){
                     e[1]= null;
@@ -97,7 +113,6 @@ class TrackerCurvesChart extends Component {
                     this.sql = this.sql.replace(e[0], "'" + e[1] + "'");
                 }
             })
-            console.log("here "+this.sql);
             Resthub.json2(this.sql, null, null, null, configuration.resthubUrl)
             .then(resp => {
                 const data = resp.data.data;
@@ -139,10 +154,7 @@ class TrackerCurvesChart extends Component {
        }
     }
 
-    handleLogScale = (event, isChecked) => {
-        const type = isChecked ? 'logarithmic' : 'linear';
-        this.chart.yAxis[0].update({ type: type });
-    }
+    
 
     componentDidMount() {
         let { configuration } = this.props;
@@ -151,10 +163,11 @@ class TrackerCurvesChart extends Component {
 
         const options = {
             chart: {
-                height: this.props.portletHeight - 30,
+                height: this.props.portletHeight - 50,
                 zoomType: 'xy',
                 panning: true,
-                panKey: 'shift'
+                panKey: 'shift',
+                type: 'column'
             },
             plotOptions: {
                 series: {
@@ -226,7 +239,7 @@ class TrackerCurvesChart extends Component {
 
     shouldResize() {
         if (this.chart && this.props.editMode) {
-            const newSize = { width: this.props.size.width, height: this.props.portletHeight - 30 };
+            const newSize = { width: this.props.size.width, height: this.props.portletHeight - 50 };
             const changed = this.haveSizeChanged(newSize);
 
             if (changed) {
@@ -238,8 +251,48 @@ class TrackerCurvesChart extends Component {
     haveSizeChanged = (newSize) => {
         return newSize.width !== this.chart.chartWidth || newSize.height !== this.chart.chartHeight;
     }
+    
+    
+
+    handleChangeX = (event) => {
+      this.setState({labelX: event.target.value});
+      console.log("here"+this.state.labelX);
+    };
+    
+    handleChangeY = (event) => {
+      this.setState({labelY: event.target.value});
+      console.log(this.state);
+    };
+
+    handleLogScale = (event, isChecked) => {
+        const type = isChecked ? 'logarithmic' : 'linear';
+        this.chart.yAxis[0].update({ type: type });
+        //console.log(this.state);
+    }
+    
+    handleModeFrequency = (event, isChecked) => {
+        const type = isChecked ? 'Freq' : '2D';
+        this.setState({mode: type})
+        //console.log(this.state);
+    }
+    
+    handleMode2D = (event, isChecked) => {
+        const type = isChecked ? '2D' : 'Freq';
+        this.setState({mode: type})
+        //console.log("mode "+this.state.mode);
+    }
+    
+   
+    renderAxis = () => {
+        
+            return <MenuItem value={10}>djdjdjdjdjdjdjdjdj</MenuItem>;
+          		
+        
+    }
 
     render() {
+    	const { mode } = this.state;
+    	console.log("mode ");
         return (
             <div>
                 <div id={this.id} />
@@ -248,9 +301,56 @@ class TrackerCurvesChart extends Component {
                     control={<Checkbox color="primary" onChange={this.handleLogScale} />}
                     label="Logarithmic scale"
                 />
+                <FormControl component="fieldset">
+      			<RadioGroup row aria-label="Aggregate" name="Aggregate" defaultValue="2D">
+      			<FormControlLabel
+        		style={{ marginTop: -10, marginLeft: 5 }}
+          		value="frequency"
+          		control={<Radio color="primary" onChange={this.handleModeFrequency}/>}
+         		label="Frequency plot"
+          		labelPlacement="start"
+        		/>
+        		<FormControlLabel
+        		style={{ marginTop: -10, marginLeft: 35 }}
+          		value="2D"
+          		control={<Radio color="primary" onChange={this.handleMode2D}/>}
+          		label="2D Chart"
+          		labelPlacement="start"
+        		/>
+      			</RadioGroup>
+    		</FormControl>
+    		<FormControl component="fieldset">
+    			<InputLabel id="x_axis" style={{ marginTop: -10, marginLeft: 20}} >X axis</InputLabel>
+        		<Select
+          			labelId="x_axis"
+          			id="x_axis"
+          			value={this.state.labelX}
+          			onChange={this.handleChangeX}
+          			style={{ marginTop: -10, marginLeft: 75, minWidth: 200 }}
+          			autoWidth
+        		>
+        		{this.renderAxis()}
+        		</Select>
+        	</FormControl>
+        	<FormControl  component="fieldset">	
+        		<InputLabel id="y_axis" style={{ marginTop: -10, marginLeft: 20}}>Y axis</InputLabel>
+        		<Select
+        			disabled={mode=='Freq'}
+          			labelId="y_axis"
+          			id="y_axis"
+          			value={this.state.labelY}
+          			onChange={this.handleChangeY}
+          			style={{ marginTop: -10, marginLeft: 75 , minWidth: 200 }}
+          			autoWidth
+        		>
+          		<MenuItem value={10}>djdjdjdjdjdjdjdjdj</MenuItem>
+          		<MenuItem value={20}>Twenty</MenuItem>
+          		<MenuItem value={30}>Thirty</MenuItem>
+        		</Select>
+      		</FormControl>
             </div>
         );
     }
 }
 
-export default sizeMe({ monitorWidth: true })(TrackerCurvesChart);
+export default sizeMe({ monitorWidth: true })(TrackerTrendChart);

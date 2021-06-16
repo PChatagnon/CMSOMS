@@ -32,12 +32,12 @@ const RESTHUB_URL = '/tracker-resthub';
 
 
 
-class TrackerTrendChart extends Component {
+class TrackerCurvesChart extends Component {
 
     constructor(props) {
         super(props);
         this.chart = null;
-        this.id = generateId('TrackerTrendChart');
+        this.id = generateId('TrackerCurvesChart');
         this.yAxes = [];
         this.state = {
         	mode: '2D',
@@ -691,7 +691,7 @@ class TrackerTrendChart extends Component {
         		style={{ marginTop: -10, marginLeft: 25 }}
           		value="frequency"
           		control={<Radio color="primary" onChange={this.handleModeFrequency}/>}
-         		label="1D Chart"//"Frequency plot"
+         		label="Frequency plot"
           		labelPlacement="start"
         		/>
         		
@@ -719,4 +719,4 @@ class TrackerTrendChart extends Component {
     }
 }
 
-export default sizeMe({ monitorWidth: true })(TrackerTrendChart);
+export default sizeMe({ monitorWidth: true })(TrackerCurvesChart);
