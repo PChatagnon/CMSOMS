@@ -15,7 +15,7 @@ class ResthubTable extends Component {
         const { configuration } = props;
         this.resthubUrl = 'resthubUrl' in configuration ? configuration.resthubUrl : 'http://localhost:9091';
 
-	console.log("resthubUrl table" + this.resthubUrl);
+        console.log("resthubUrl table" + this.resthubUrl);
 
         const order = 'sort' in configuration ? configuration.sort.order : 'desc';
         const orderBy = 'sort' in configuration ? configuration.sort.column : null;
@@ -66,14 +66,14 @@ class ResthubTable extends Component {
             this.loadData(nextQuery);
         });
     }
-    
+
     loadMeta = () => {
         const { configuration } = this.props;
         return Resthub.query("SELECT * FROM ( " + configuration.query + " ) t  ", this.resthubUrl)
             .then(response => {
                 return Resthub.meta(response.data, this.resthubUrl)
                     .then(response => {
-                    	console.log(response);
+                        console.log(response);
                         this.columns.tableColumns = response.data.columns.map(column => {
                             return {
                                 title: column.name,
@@ -86,7 +86,7 @@ class ResthubTable extends Component {
                             }
                         });
                         const { tableColumns } = this.columns;
-			console.log(tableColumns);
+                        console.log(tableColumns);
                         // Load rowSize from cookie
                         const rowSizeCookie = cookie.load(this.rowSizeCookieName);
                         this.params.rowSize = rowSizeCookie ? parseInt(rowSizeCookie, 10) : this.params.rowSize;
@@ -95,7 +95,7 @@ class ResthubTable extends Component {
                         // Load columns from cookie
                         const cookieColumns = cookie.load(this.columnsCookieName) || null;
                         if (cookieColumns) {
-			    const filteredColumns = cookieColumns.map(column => tableColumns.find(c => c.name === column));
+                            const filteredColumns = cookieColumns.map(column => tableColumns.find(c => c.name === column));
                             this.columns.columns = filteredColumns;
                             this.showResetBtn = true;
                             return;
@@ -104,10 +104,10 @@ class ResthubTable extends Component {
                         // Load columns from portlet config 
                         const { columns } = configuration;
                         if (columns && columns.length) {
-                        //console.log("In config");
-                        //console.log(columns);
-                           const filteredColumns = columns.map(column => {if(tableColumns.find(c => c.name === column.name)) return column; });
-                            console.log(filteredColumns);     
+                            //console.log("In config");
+                            //console.log(columns);
+                            const filteredColumns = columns.map(column => { if (tableColumns.find(c => c.name === column.name)) return column; });
+                            console.log(filteredColumns);
                             this.columns.columns = filteredColumns;
                             return;
                         }
@@ -115,40 +115,40 @@ class ResthubTable extends Component {
                         this.columns.columns = [...tableColumns];
                     })
                     .then(() => this.filterEmptyCol())
-                    	.then(() => this.loadData());
+                    .then(() => this.loadData());
             }).catch(error => this.props.onFailure(error));
     }
 
 
 
 
-// This function counts the number of entries in a column and filter them depending the count 
-     checkColumn = (c,sqlParams) => {
-    	
-    	let sql = 'SELECT ';
-    	sql += ' count(t.'+c.title+') as countColumn ';
-    	sql += ' FROM ( '+ this.props.configuration.query +' ) t';
-    	let count=0;
-    	let counts= [];
-	
-    	return Resthub.json2(sql, sqlParams, null, null, this.resthubUrl).then(
-	(resp)=>{
-	const respData = resp.data.data;
-	counts = respData.length ? respData.map(s => s.countcolumn) : null;
-	count = counts ? counts[0] : null;
+    // This function counts the number of entries in a column and filter them depending the count 
+    checkColumn = (c, sqlParams) => {
 
-         return (!c.isHidden || count>0);      
-  
-	}
-	);
-         
+        let sql = 'SELECT ';
+        sql += ' count(t.' + c.title + ') as countColumn ';
+        sql += ' FROM ( ' + this.props.configuration.query + ' ) t';
+        let count = 0;
+        let counts = [];
+
+        return Resthub.json2(sql, sqlParams, null, null, this.resthubUrl).then(
+            (resp) => {
+                const respData = resp.data.data;
+                counts = respData.length ? respData.map(s => s.countcolumn) : null;
+                count = counts ? counts[0] : null;
+
+                return (!c.isHidden || count > 0);
+
+            }
+        );
+
     }
 
-//Apply to all columns and wait for all response for every column
-    filterEmptyCol = () =>{
-    
-     this.props.showLoader();
-	const { configuration } = this.props;
+    //Apply to all columns and wait for all response for every column
+    filterEmptyCol = () => {
+
+        this.props.showLoader();
+        const { configuration } = this.props;
         let sqlParams = {};
 
         if (configuration.parameters) {
@@ -163,43 +163,43 @@ class ResthubTable extends Component {
                 }
             });
         }
-        
+
         const { columns, tableColumns } = this.columns;
         // SELECT
         const diff = difference(Object.keys(tableColumns), columns.map(c => c.name));
-	let listColumn = '';
-	
-	const serializePromise = promiseFactoryList =>
-  		promiseFactoryList.reduce(serialize, Promise.resolve([]));
+        let listColumn = '';
 
-	const serialize = async (promise, promiseFactory) => {
-  		const promiseResult = await promise;
-  		const res = await promiseFactory();
-  		return [...promiseResult, res];
-	};
+        const serializePromise = promiseFactoryList =>
+            promiseFactoryList.reduce(serialize, Promise.resolve([]));
 
-  	const promiseExample = (c,sqlParams) =>
-  		new Promise((res) => {
-	  		res(this.checkColumn(c,sqlParams));
-  		});
+        const serialize = async (promise, promiseFactory) => {
+            const promiseResult = await promise;
+            const res = await promiseFactory();
+            return [...promiseResult, res];
+        };
 
-	const funcs = columns.map(c => async () => await promiseExample(c,sqlParams));
-	
-	return serializePromise(funcs).then(res => {
-  		const filteredColumns = [];
-  		res.map((val, index) => {if(val) return filteredColumns.push(columns[index]); else return; });
-                this.columns.columns = filteredColumns;
-                return;
-	});
-	
-    	
+        const promiseExample = (c, sqlParams) =>
+            new Promise((res) => {
+                res(this.checkColumn(c, sqlParams));
+            });
+
+        const funcs = columns.map(c => async () => await promiseExample(c, sqlParams));
+
+        return serializePromise(funcs).then(res => {
+            const filteredColumns = [];
+            res.map((val, index) => { if (val) return filteredColumns.push(columns[index]); else return; });
+            this.columns.columns = filteredColumns;
+            return;
+        });
+
+
     }
 
- 
-     
-     createQuery = (sqlParams) => {
+
+
+    createQuery = (sqlParams) => {
         if (this.params.queryId) return Promise.resolve();
-	
+
         const { orderBy, order, filter, rowSize } = this.params;
         const { columns, tableColumns } = this.columns;
         let sql = 'SELECT ';
@@ -208,14 +208,14 @@ class ResthubTable extends Component {
         const diff = difference(Object.keys(tableColumns), columns.map(c => c.name));
 
         if (columns.length && diff.length) {
-          
-            sql += columns.map((column)=>'t.' + column.title).join(','); // Appends "t." to column names
+
+            sql += columns.map((column) => 't.' + column.title).join(','); // Appends "t." to column names
         }
         else sql += ' * ';
 
-	
-	
-		console.log("dans createQuery with sql  "+	sql);
+
+
+        console.log("dans createQuery with sql  " + sql);
         // FROM
         sql += ` FROM ( ${this.props.configuration.query} ) t `;
 
@@ -234,9 +234,9 @@ class ResthubTable extends Component {
             this.params.order = order;
             sql += orderColumn ? ` ORDER BY t.${orderColumn.title} ${order}` : '';
         }
-        
-        console.log('sql '+sql);
-        
+
+        console.log('sql ' + sql);
+
         return Resthub.query(sql, this.resthubUrl)
             .then(response => {
                 const queryId = response.data;
@@ -249,14 +249,14 @@ class ResthubTable extends Component {
                     });
             });
     }
-    
+
 
 
     fetchData = (sqlParams) => {
         const { queryId, rowSize, page } = this.params;
         console.log('cia ', queryId, rowSize, page)
         Resthub.json_fast(queryId, sqlParams, rowSize, page, this.resthubUrl)
-        // Resthub.json_fast(queryId, sqlParams, rowSize, page, this.resthubUrl)
+            // Resthub.json_fast(queryId, sqlParams, rowSize, page, this.resthubUrl)
             .then(response => {
                 const data = response.data.data.map(row => {
                     return {

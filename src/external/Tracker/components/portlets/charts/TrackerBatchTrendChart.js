@@ -12,6 +12,8 @@ HighchartsExporting(Highcharts);
 HighchartsOfflineExporting(Highcharts);
 setHighchartsLibURL(Highcharts);
 import { withStyles } from '@material-ui/core/styles';
+import CircularProgress from '@material-ui/core/CircularProgress';
+
 
 
 import Radio from '@material-ui/core/Radio';
@@ -26,18 +28,19 @@ import SwapHorizIcon from '@material-ui/icons/SwapHoriz';
 import IconButton from '@material-ui/core/IconButton';
 import TextField from '@material-ui/core/TextField';
 import bellCurve from "highcharts/modules/histogram-bellcurve";
+import blue from '@material-ui/core/colors/blue';
 bellCurve(Highcharts);
 
 const RESTHUB_URL = '/tracker-resthub';
 
 
 
-class TrackerTrendChart extends Component {
+class TrackerBatchTrendChart extends Component {
 
     constructor(props) {
         super(props);
         this.chart = null;
-        this.id = generateId('TrackerTrendChart');
+        this.id = generateId('TrackerBatchTrendChart');
         this.yAxes = [];
         this.state = {
             mode: '2D',
@@ -69,32 +72,42 @@ class TrackerTrendChart extends Component {
     }
 
     componentDidUpdate(prevProps) {
-        if (this.state.mode == '2D') {
+        if (this.state.mode == '2D' && !this.AllowDisplay()) {
+            this.props.shouldUpdate(prevProps.query, this.props.query, this.loadMeta);
+            this.props.shouldRefresh(this.props, this.loadMeta);
+        }
+        else if (!this.AllowDisplay()) {
+            this.props.shouldUpdate(prevProps.query, this.props.query, this.loadMeta);
+            this.props.shouldRefresh(this.props, this.loadloadMetaDataFreq);
+        }
+        else if (this.state.mode == '2D' && this.AllowDisplay()) {
             this.props.shouldUpdate(prevProps.query, this.props.query, this.loadData);
             this.props.shouldRefresh(this.props, this.loadData);
         }
-        else {
+        else if (this.AllowDisplay()) {
             this.props.shouldUpdate(prevProps.query, this.props.query, this.loadDataFreq);
             this.props.shouldRefresh(this.props, this.loadDataFreq);
         }
-
         this.shouldResize();
     }
 
-    loadMeta = () => {
+    loadMeta = () => {  //To change to
         const { configuration } = this.props;
         let sql = configuration.url;
-        Object.entries(this.props.query).forEach(e => {
-            if (e[1] === '') {
-                e[1] = null;
-                sql = sql.replace(' = ' + e[0], ' is ' + e[1]);
-            } else {
-                sql = sql.replace(e[0], "'" + e[1] + "'");
-            }
-        });
-        console.log("HERERERERERE " + sql);
 
-        return Resthub.query("SELECT * FROM ( " + sql + " ) meta  ", this.resthubUrl)
+        console.log(this.props.query);
+
+        let sql2 = sql;
+        if (this.props.query.tracker_data.length > 0) {
+            Object.entries(this.props.query.tracker_data[0].barcodeRunList[0]).forEach(ef => {
+                sql2 = sql2.replace(ef[0], "'" + ef[1] + "'");
+
+            })
+        }
+        console.log("sql modified sql2 " + sql2)
+
+
+        return Resthub.query("SELECT * FROM ( " + sql2 + " ) meta  ", this.resthubUrl)
             .then(response => {
                 return Resthub.meta(response.data, this.resthubUrl)
                     .then(response => {
@@ -111,24 +124,88 @@ class TrackerTrendChart extends Component {
                                 sortable: true,
                             }
                         });
+
+                        this.columns.unshift({
+                            title: "Batch nb",
+                            name: "Batch nb",
+                            label: "BATCH nb",
+                            type: "Batch nb".toLowerCase(),
+                            description: null,
+                            units: null,
+                            sortable: true,
+                        });
+                        this.setState({ loadMeta: true })
                     })
+            })//.catch(error => this.props.onFailure(error));
+    }
+
+    average(array, i) {
+        let reduced = array.map(a => a[i]);
+        return reduced.reduce((a, b) => a + b) / array.length;
+    }
+
+    createSQL = (element, sql, i) => {
+        if (i == 0) {
+            sql = sql + " where (t.SENSOR='" + element.barcode + "' and t.run_number=" + element.run + ")";
+        }
+        else sql = sql + " or (t.SENSOR='" + element.barcode + "' and t.run_number=" + element.run + ")";
+        return sql;
+    }
+
+    getBatch = (batch) => {
+        let Batch = {};
+        Batch['data'] = [];
+        Batch['ID'] = batch.tracker_id;
+        let mean_data = [];
+        let retrieved_data = [];
+
+        const { configuration } = this.props;
+        this.sql = configuration.url;
+        let sqli = this.sql.substring(0, this.sql.indexOf('where'));
+        batch.barcodeRunList.map((element, i) => { sqli = this.createSQL(element, sqli, i) });
+
+        console.log(sqli)
+
+        return Resthub.json2(sqli, null, null, null, configuration.resthubUrl)   /// BE CAREFUL WITH PAGE SIZE
+            .then(resp => {
+                const data = resp.data.data;
+                console.log("data")
+                console.log(data)
+                data.forEach(d => {
+                    retrieved_data.push([d[this.state.labelX.name], d[this.state.labelY.name]])
+                });
+
+                let batch_number = parseInt(Batch['ID'].substring(6))
+                if (this.state.labelX.name == "Batch nb") {
+                    mean_data = [[batch_number, this.average(retrieved_data, 1)]];
+                }
+                else if (this.state.labelY.name == "Batch nb") {
+                    mean_data = [[this.average(retrieved_data, 0), batch_number]];
+                }
+                else mean_data = [[this.average(retrieved_data, 0), this.average(retrieved_data, 1)]];
+
+                console.log("retrieved_data")
+                console.log(mean_data)
+                Batch['data'] = mean_data;
+                return Batch;
             }).catch(error => this.props.onFailure(error));
+
     }
 
     loadData = (query = this.props.query) => {
-
         this.loadMeta().then(
             () => {
 
                 this.setState({ loadMeta: true })
+                this.setState({ loading: true })
                 this.props.showLoader();
 
                 this.colorCount = 0;
                 this.axisColor = 0;
 
                 // Remove all chart series without redrawing
-                while (this.chart.series.length > 0)
-                    this.chart.series[0].remove(false);
+                //while (this.chart.series.length > 0)
+                //    this.chart.series[0].remove(false);
 
                 this.chart.redraw();
 
@@ -136,110 +213,58 @@ class TrackerTrendChart extends Component {
                 this.sql = configuration.url;
 
                 let sql3 = this.sql;
-                if (this.AllowDisplay()) sql3 = "SELECT data." + this.state.labelX.label + " " + ", data." + this.state.labelY.label + " " + " FROM ( " + this.sql + " ) data  ORDER BY data." + this.state.labelX.label + " ASC";
-
-                this.create2Dplot(configuration)
-                console.log("query.tracker_data");
-                console.log(query.tracker_data);
-                if (query.tracker_data.length > 0) {
-                    query.tracker_data.forEach(e => {
-                        let sql2 = sql3;
-                        Object.entries(e).forEach(ef => {
-                            if (ef[1] === '') {
-                                ef[1] = null;
-                                sql2 = sql2.replace(' = ' + ef[0], ' is ' + ef[1]);
-                            } else {
-                                sql2 = sql2.replace(ef[0], "'" + ef[1] + "'");
-                            }
-                        })
-
-                        console.log("sql2: " + sql2);
-                        const { xAxisObjectName, superImpose } = configuration;
-                        Resthub.json2(sql2, null, null, null, configuration.resthubUrl)
-                            .then(resp => {
-                                const data = resp.data.data;
-
-                                //let series = [];
-                                let seria = {};
-                                seria['name'] = e['tracker_id'];
-                                seria['data'] = [];
-                                data.forEach(d => {
-                                    seria['data'].push([d[this.state.labelX.name], d[this.state.labelY.name]])//[d[xAxisObjectName], d[superImpose]])
-                                });
-                                seria['tooltip'] = {
-                                    pointFormatter: function () {
-                                        return `<span style='color: ${this.series.color}'>\u25CF</span> ${this.series.name}: <b>${this.y}</b><br />`;
-                                    }
-                                }
-                                seria['color'] = Highcharts.getOptions().colors[this.colorCount]
-                                this.colorCount = this.colorCount + 1;
-                                this.chart.addSeries(seria);
-                                this.chart.setTitle({ text: this.state.labelY.name + " VS " + this.state.labelX.name });
-                                this.chart.redraw();
-                                if (!data.length)
-                                    return this.props.onEmpty();
-                                this.chart.hideLoading();
-                                return this.props.hideLoader();
-                            }).catch(error => this.props.onFailure(error));
-                    })
-                } else {
-                    let sql2 = sql3;
-                    Object.entries(this.props.query).forEach(e => {
-                        if (e[1] === '') {
-                            e[1] = null;
-                            sql2 = sql2.replace(' = ' + e[0], ' is ' + e[1]);
-                        } else {
-                            sql2 = sql2.replace(e[0], "'" + e[1] + "'");
-                        }
-                    })
-                    console.log("sql2 prime: " + sql2);
-                    Resthub.json2(sql2, null, null, null, configuration.resthubUrl)
-                        .then(resp => {
-                            const data = resp.data.data;
-                            let series = [];
-                            console.log("configuration: ");
-                            console.log(configuration);
-                            console.log(query);
-                            Object.entries(configuration.series).forEach(e => {
-                                let seria = {};
-                                //seria['useHTML'] = true;
-                                seria['name'] = query.tracker_partBarcode;//e[1].name
-                                seria['data'] = [];
-                                seria['dataAxis'] = configuration.yAxes[e[1].yAxis].yAxisObjectName//this.state.LabelX//
-                                seria['yAxis'] = e[1].yAxis;//this.state.labelY;//
-                                seria['tooltip'] = {
-                                    pointFormatter: function () {
-                                        return `<span style='color: ${this.series.color}'>\u25CF</span> ${this.series.name}: <b>${this.y}</b><br />`;
-                                    }
-                                }
-                                seria['color'] = Highcharts.getOptions().colors[this.colorCount]
-                                series.push(seria);
-                            });
-                            data.forEach(d => {
-                                series.forEach(s => {
-                                    s.data.push([d[this.state.labelX.name], d[this.state.labelY.name]])
-                                })
-                            });
-                            series.forEach(s => {
-                                this.chart.addSeries(s, false)
-                            })
-
-                            console.log(series);
-
-                            this.chart.setTitle({ text: this.state.labelY.name + " VS " + this.state.labelX.name }); //query[configuration.paramForTitle]
-
-                            this.chart.redraw();
-
-                            if (!data.length)
-                                return this.props.onEmpty();
-
-                            this.chart.hideLoading();
-                            return this.props.hideLoader();
-                        }).catch(error => this.props.onFailure(error));
+                if (this.AllowDisplay()) {
+                    if (this.state.labelX.label == "BATCH nb") { sql3 = "SELECT data." + this.state.labelY.label + " " + " FROM ( " + this.sql + " ) data "; }
+                    else if (this.state.labelY.label == "BATCH nb") { sql3 = "SELECT data." + this.state.labelX.label + " " + " FROM ( " + this.sql + " ) data "; }
+                    else { sql3 = "SELECT data." + this.state.labelX.label + " " + ", data." + this.state.labelY.label + " " + " FROM ( " + this.sql + " ) data  ORDER BY data." + this.state.labelX.label + " ASC"; }
                 }
+                this.create2Dplot(configuration);
 
-            });
+
+                const serializePromise = promiseFactoryList =>
+                    promiseFactoryList.reduce(serialize, Promise.resolve([]));
+
+                const serialize = async (promise, promiseFactory) => {
+                    const promiseResult = await promise;
+                    const res = await promiseFactory();
+                    return [...promiseResult, res];
+                };
+
+                const promise = (c) =>
+                    new Promise((res) => {
+                        res(this.getBatch(c));
+                    });
+
+                const funcs = query.tracker_data.map(c => async () => await promise(c));
+
+                return serializePromise(funcs).then(res => {
+                    let batchdataList = [];
+                    batchdataList = res.map((val, index) => { return val; });
+                    return batchdataList.map(s => {
+                        let seria = {};
+                        console.log("In display data")
+                        console.log(s)
+                        seria['data'] = s.data;
+                        seria['name'] = s.ID;
+                        seria['color'] = Highcharts.getOptions().colors[this.colorCount];
+                        seria['tooltip'] = {
+                            pointFormatter: function () {
+                                return `<span style='color: ${this.series.color}'>\u25CF</span> <b>" X "${this.x}</b> <b>" Y "${this.y}</b><br />`;
+                            }
+                        }
+                        this.colorCount = this.colorCount + 1;
+                        this.chart.addSeries(seria, false);
+
+                    })
+                }).then(() => {
+                    this.chart.setTitle({ text: this.state.labelY.name + " VS " + this.state.labelX.name });
+                    this.chart.redraw();
+                    return this.props.hideLoader();
+                });
+
+            })
     }
+
 
     loadDataFreq = (query = this.props.query) => {
 
@@ -408,7 +433,8 @@ class TrackerTrendChart extends Component {
 
         this.chart = new Highcharts.chart(this.id, options);
 
-        this.loadData();
+        this.loadMeta();
+        //if(this.AllowDisplay){this.loadData();}
 
     }
 
@@ -536,6 +562,8 @@ class TrackerTrendChart extends Component {
         return newSize.width !== this.chart.chartWidth || newSize.height !== this.chart.chartHeight;
     }
 
+
+
     AllowDisplay = () => {
         let display = (this.state.mode == '2D' && this.state.labelY.name != '' && this.state.labelX.name != '') || (this.state.mode == 'Freq' && this.state.labelX.name != '');
         return display;
@@ -617,7 +645,7 @@ class TrackerTrendChart extends Component {
     }
 
 
-    renderAxis = () => {
+    renderXAxis = () => {
         let empty = 'No data';
         let emptycol = {
             title: '',
@@ -637,9 +665,29 @@ class TrackerTrendChart extends Component {
 
     }
 
+    renderYAxis = () => {
+        let empty = 'No data';
+        let emptycol = {
+            title: '',
+            name: '',
+            label: '',
+            type: '',
+            description: null,
+            units: null,
+            sortable: true
+        };
+        if (this.state.loadMeta && this.columns.length > 0) {
+            return this.columns.map((column) => {
+                return <MenuItem value={column.label} > {`${column.label}`} </MenuItem>;
+            });
+        }
+        else return <MenuItem value={emptycol}> {empty} </MenuItem>;
+
+    }
+
+
     render() {
         const { mode } = this.state;
-        console.log("mode ");
         return (
             <div>
                 <div id={this.id} />
@@ -660,7 +708,7 @@ class TrackerTrendChart extends Component {
                         style={{ marginTop: -10, marginLeft: 75, minWidth: 200 }}
                         autoWidth
                     >
-                        {this.renderAxis()}
+                        {this.renderXAxis()}
                     </Select>
                 </FormControl>
 
@@ -683,7 +731,7 @@ class TrackerTrendChart extends Component {
                         style={{ marginTop: -10, marginLeft: 75, minWidth: 200 }}
                         autoWidth
                     >
-                        {this.renderAxis()}
+                        {this.renderYAxis()}
                     </Select>
                 </FormControl>
 
@@ -716,6 +764,8 @@ class TrackerTrendChart extends Component {
 
                     </RadioGroup>
                 </FormControl>
+
+
                 <Button variant="contained"
                     color="primary"
                     onClick={this.handleDisplayClick}
@@ -729,4 +779,4 @@ class TrackerTrendChart extends Component {
     }
 }
 
-export default sizeMe({ monitorWidth: true })(TrackerTrendChart);
+export default sizeMe({ monitorWidth: true })(TrackerBatchTrendChart);

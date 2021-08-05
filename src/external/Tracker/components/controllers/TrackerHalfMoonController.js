@@ -1,11 +1,11 @@
 import React, {
 	Component
 }
-from 'react';
+	from 'react';
 import {
 	withStyles
 }
-from '@material-ui/core/styles';
+	from '@material-ui/core/styles';
 import AutoComplete from '../../../../components/generic/Autocomplete';
 import MenuItem from '@material-ui/core/MenuItem';
 import TextField from '@material-ui/core/TextField';
@@ -137,17 +137,17 @@ class TrackerHalfMoonController extends Component {
 				}
 			}
 		}
-		
+
 		let initPQC = () => {
 			let urlMetadata = "trker_int2r.c13560";
-		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_FLUTE_ID FROM " + urlMetadata + " t ", null, null, null, RESTHUB_URL)
-			.then(response => {
-				const fluteTypes = response.data.data;
-				this.setState({
-					fluteTypes: fluteTypes.map(s => s.kindOfHmFluteId),
-					errMessage: ''
+			Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_FLUTE_ID FROM " + urlMetadata + " t ", null, null, null, RESTHUB_URL)
+				.then(response => {
+					const fluteTypes = response.data.data;
+					this.setState({
+						fluteTypes: fluteTypes.map(s => s.kindOfHmFluteId),
+						errMessage: ''
+					});
 				});
-			});
 		}
 
 		let {
@@ -181,7 +181,7 @@ class TrackerHalfMoonController extends Component {
 										lastSetType = setTypes ? setTypes[0] : null;
 										setType = "";//lastSetType ? lastSetType : null
 										console.log("set type " + setType);
-										return Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + structureType  + "' AND t.KIND_OF_HM_CONFIG_ID = '" + configType + "' AND t.KIND_OF_HM_SET_ID = '" + setType + "' ORDER BY t.PART_BARCODE ", null, 1, 1, RESTHUB_URL)
+										return Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + structureType + "' AND t.KIND_OF_HM_CONFIG_ID = '" + configType + "' AND t.KIND_OF_HM_SET_ID = '" + setType + "' ORDER BY t.PART_BARCODE ", null, 1, 1, RESTHUB_URL)
 											.then(resp => {
 												const respData = resp.data.data;
 												const barcodeTypes = respData.length ? respData.map(s => s.partBarcode) : null;
@@ -225,8 +225,8 @@ class TrackerHalfMoonController extends Component {
 		}
 		this.props.updateState(controllerState);
 	}
-	
-	
+
+
 	emptyRuns = () => {
 		let {
 			controllerData
@@ -241,20 +241,20 @@ class TrackerHalfMoonController extends Component {
 	}
 
 	fetchRunNames = (barcodeType, fluteType, structureType, configType, setType) => {
-	
+
 		let emptyRuns = () => {
-		let {
-			controllerData
-		} = this.props;
-		controllerData.runs = [];
-		this.props.updateControllerData(controllerData);
-		let {
-			controllerState
-		} = this.props;
-		controllerState.tracker_runTypeNumber = [];
-		this.props.updateState(controllerState);
+			let {
+				controllerData
+			} = this.props;
+			controllerData.runs = [];
+			this.props.updateControllerData(controllerData);
+			let {
+				controllerState
+			} = this.props;
+			controllerState.tracker_runTypeNumber = [];
+			this.props.updateState(controllerState);
 		}
-	
+
 		let urlMetadata = "trker_int2r.c13560";
 		let urlDatasets = "trker_int2r.datasets";
 		let urlRuns = "trker_int2r.runs";
@@ -313,9 +313,9 @@ class TrackerHalfMoonController extends Component {
 		const fluteType = this.validateFluteType(searchText);
 		if (!fluteType) return;
 		this.updateFlute(fluteType);
-		
+
 		let urlMetadata = "trker_int2r.c13560";
-		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_STRUCT_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + fluteType+ "' ", null, null, null, RESTHUB_URL)
+		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_STRUCT_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + fluteType + "' ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const structureTypes = response.data.data;
 				this.setState({
@@ -323,16 +323,16 @@ class TrackerHalfMoonController extends Component {
 					errMessage: ''
 				});
 			});
-		
+
 		const barcodeType = this.validateBarcodeType(this.props.controllerState.tracker_partBarcode);
 		const structureType = this.validateStructureType(this.props.controllerState.tracker_hmStructType);
 		const configType = this.validateConfigType(this.props.controllerState.tracker_hmConfigType);
 		const setType = this.validateSetType(this.props.controllerState.tracker_hmSetType);
 		console.log("what is list of barcode type flute change " + barcodeType);
-		
+
 		this.fetchRunNames(barcodeType, fluteType, structureType, configType, setType);
-		
-		
+
+
 		return;
 	}
 
@@ -352,9 +352,9 @@ class TrackerHalfMoonController extends Component {
 		const structureType = this.validateStructureType(searchText);
 		if (!structureType) return;
 		this.updateStructure(structureType);
-		
+
 		let urlMetadata = "trker_int2r.c13560";
-		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_CONFIG_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + structureType+"'", null, null, null, RESTHUB_URL)
+		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_CONFIG_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + structureType + "'", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const configTypes = response.data.data;
 				this.setState({
@@ -362,15 +362,15 @@ class TrackerHalfMoonController extends Component {
 					errMessage: ''
 				});
 			});
-			
+
 		const barcodeType = this.validateBarcodeType(this.props.controllerState.tracker_partBarcode);
 		const fluteType = this.validateFluteType(this.props.controllerState.tracker_fluteType);
 		const configType = this.validateConfigType(this.props.controllerState.tracker_hmConfigType);
 		const setType = this.validateSetType(this.props.controllerState.tracker_hmSetType);
-		
+
 		this.fetchRunNames(barcodeType, fluteType, structureType, configType, setType);
-		
-		
+
+
 		return;
 	}
 
@@ -381,9 +381,9 @@ class TrackerHalfMoonController extends Component {
 		controllerState.tracker_hmStructType = structureType;
 		this.props.updateState(controllerState);
 	}
-	
+
 	//config
-	
+
 	validateConfigType = (configType) => {
 		return this.state.configTypes.find(s => s === configType);
 	}
@@ -392,11 +392,11 @@ class TrackerHalfMoonController extends Component {
 		const configType = this.validateConfigType(searchText);
 		if (!configType) return;
 		this.updateConfig(configType);
-		
-		console.log("yooooo je suis la "+configType);
-		
+
+		console.log("yooooo je suis la " + configType);
+
 		let urlMetadata = "trker_int2r.c13560";
-		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_SET_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType+"'"+ " AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "'", null, null, null, RESTHUB_URL)
+		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_SET_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "'" + " AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "'", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const setTypes = response.data.data;
 				this.setState({
@@ -404,15 +404,15 @@ class TrackerHalfMoonController extends Component {
 					errMessage: ''
 				});
 			});
-			
+
 		const barcodeType = this.validateBarcodeType(this.props.controllerState.tracker_partBarcode);
 		const fluteType = this.validateFluteType(this.props.controllerState.tracker_fluteType);
 		const structureType = this.validateStructureType(this.props.controllerState.tracker_hmStructType);
 		const setType = this.validateSetType(this.props.controllerState.tracker_hmSetType);
-		
+
 		this.fetchRunNames(barcodeType, fluteType, structureType, configType, setType);
-		
-		
+
+
 		return;
 	}
 
@@ -423,11 +423,11 @@ class TrackerHalfMoonController extends Component {
 		controllerState.tracker_hmConfigType = configType;
 		this.props.updateState(controllerState);
 	}
-	
+
 	///
-	
+
 	//"hm set" function
-	
+
 	validateSetType = (setType) => {
 		return this.state.setTypes.find(s => s === setType);
 	}
@@ -436,11 +436,11 @@ class TrackerHalfMoonController extends Component {
 		const setType = this.validateSetType(searchText);
 		if (!setType) return;
 		this.updateSet(setType);
-		
-		console.log("yooooo je suis la "+setType);
-		
+
+		console.log("yooooo je suis la " + setType);
+
 		let urlMetadata = "trker_int2r.c13560";
-		Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType+"'"+ " AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType +  "' AND t.KIND_OF_HM_SET_ID = '" + setType + "'", null, null, null, RESTHUB_URL)
+		Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "'" + " AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "' AND t.KIND_OF_HM_SET_ID = '" + setType + "'", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const barcodeTypes = response.data.data;
 				this.setState({
@@ -448,15 +448,15 @@ class TrackerHalfMoonController extends Component {
 					errMessage: ''
 				});
 			});
-			
+
 		const barcodeType = this.validateBarcodeType(this.props.controllerState.tracker_partBarcode);
 		const fluteType = this.validateFluteType(this.props.controllerState.tracker_fluteType);
 		const structureType = this.validateStructureType(this.props.controllerState.tracker_hmStructType);
 		const configType = this.validateConfigType(this.props.controllerState.tracker_hmConfigType);
-				
+
 		this.fetchRunNames(barcodeType, fluteType, structureType, configType, setType);
-		
-		
+
+
 		return;
 	}
 
@@ -467,13 +467,13 @@ class TrackerHalfMoonController extends Component {
 		controllerState.tracker_hmSetType = setType;
 		this.props.updateState(controllerState);
 	}
-	
+
 	///
 
 	onBarcodeTypeUpdate = (searchText) => {
 		this.updateBarcode(searchText);
 		let urlMetadata = "trker_int2r.c13560";
-		Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType +  " AND t.KIND_OF_HM_SET_ID = '" + this.props.controllerState.tracker_hmSetType + "' AND t.PART_BARCODE LIKE  '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
+		Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + " AND t.KIND_OF_HM_SET_ID = '" + this.props.controllerState.tracker_hmSetType + "' AND t.PART_BARCODE LIKE  '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const barcodeTypes = response.data.data;
 				this.setState({
@@ -521,7 +521,7 @@ class TrackerHalfMoonController extends Component {
 				});
 			});
 	}
-	
+
 	onSetTypeUpdate = (searchText) => {
 		this.updateSet(searchText);
 		let urlMetadata = "trker_int2r.c13560";
@@ -534,7 +534,7 @@ class TrackerHalfMoonController extends Component {
 				});
 			});
 	}
-	
+
 
 	onRunTypeNumberChange = event => {
 		let {
@@ -551,7 +551,7 @@ class TrackerHalfMoonController extends Component {
 
 	}
 
-	
+
 
 	renderRunNumbers = () => {
 		const {
@@ -559,39 +559,39 @@ class TrackerHalfMoonController extends Component {
 		} = this.props.controllerData;
 		if (runs.length > 0) {
 			if (runs[0].runNumber) {
-				console.log("what is this "+ !(runs[0].runNumber).toString().length)
+				console.log("what is this " + !(runs[0].runNumber).toString().length)
 				if (!(runs[0].runNumber).toString().length) {
-					console.log("what is run number  aa "+(runs[0].runNumber).toString()+" length "+runs[0].runNumber.length)
-					return <MenuItem value = {null} > None < /MenuItem>
+					console.log("what is run number  aa " + (runs[0].runNumber).toString() + " length " + runs[0].runNumber.length)
+					return <MenuItem value={null} > None </MenuItem>
 				}
 			} else {
-				console.log("what is run number 1 "+runs[0].runNumber)
-				return <MenuItem value = {null} > None < /MenuItem>
+				console.log("what is run number 1 " + runs[0].runNumber)
+				return <MenuItem value={null} > None </MenuItem>
 			}
 			return runs.map((data, index) => {
-				console.log("what is run number 2 "+runs[0].runNumber)
-				return <MenuItem value = {data.runNumber}key = {index} > {`${data.runNumber}`} < /MenuItem>
+				console.log("what is run number 2 " + runs[0].runNumber)
+				return <MenuItem value={data.runNumber} key={index} > {`${data.runNumber}`} </MenuItem>
 			});
 		} else {
-			return <MenuItem value = {null} > None < /MenuItem>
+			return <MenuItem value={null} > None </MenuItem>
 		}
 	}
 
 
-	
+
 
 	onIDAdd = () => {
 		let {
 			controllerState
 		} = this.props;
 		if (controllerState.tracker_runTypeNumber) {
-			if ( controllerState.tracker_data.find(item => item.tracker_runTypeNumber === controllerState.tracker_runTypeNumber) && controllerState.tracker_data.find(item => item.tracker_partBarcode === controllerState.tracker_partBarcode) && controllerState.tracker_data.find(item => item.tracker_fluteType === controllerState.tracker_fluteType) && controllerState.tracker_data.find(item => item.tracker_hmStructType === controllerState.tracker_hmStructType) && controllerState.tracker_data.find(item => item.tracker_hmConfigType === controllerState.tracker_hmConfigType) && controllerState.tracker_data.find(item => item.tracker_hmSetType === controllerState.tracker_hmSetType) ) {
+			if (controllerState.tracker_data.find(item => item.tracker_runTypeNumber === controllerState.tracker_runTypeNumber) && controllerState.tracker_data.find(item => item.tracker_partBarcode === controllerState.tracker_partBarcode) && controllerState.tracker_data.find(item => item.tracker_fluteType === controllerState.tracker_fluteType) && controllerState.tracker_data.find(item => item.tracker_hmStructType === controllerState.tracker_hmStructType) && controllerState.tracker_data.find(item => item.tracker_hmConfigType === controllerState.tracker_hmConfigType) && controllerState.tracker_data.find(item => item.tracker_hmSetType === controllerState.tracker_hmSetType)) {
 				window.alert("This configuration is already included");
 				return;
 			} else {
 				let title = controllerState.tracker_partBarcode + "-" + controllerState.tracker_fluteType + "-" + controllerState.tracker_hmStructType
-				if(controllerState.tracker_hmConfigType!="Not Used"){title += "-" +  controllerState.tracker_hmConfigType;}
-				if(controllerState.tracker_hmSetType!="Not Used"){title += "-" +  controllerState.tracker_hmSetType;}
+				if (controllerState.tracker_hmConfigType != "Not Used") { title += "-" + controllerState.tracker_hmConfigType; }
+				if (controllerState.tracker_hmSetType != "Not Used") { title += "-" + controllerState.tracker_hmSetType; }
 				title += "-" + controllerState.tracker_runTypeNumber;
 				controllerState.tracker_data.push({
 					tracker_runTypeNumber: controllerState.tracker_runTypeNumber,
@@ -618,210 +618,210 @@ class TrackerHalfMoonController extends Component {
 
 	renderChip = () => {
 		return (this.props.controllerState.tracker_data.map(e => {
-			return ( 
-			    < Chip 
-			         key = {e.tracker_id}
-				 icon = { < FaceIcon / >}
-				 label = {e.tracker_id}
-				 onDelete = {() => this.onIDDelete(e.tracker_id)}
-				 className = {this.props.classes.chip}
+			return (
+				< Chip
+					key={e.tracker_id}
+					icon={< FaceIcon />}
+					label={e.tracker_id}
+					onDelete={() => this.onIDDelete(e.tracker_id)}
+					className={this.props.classes.chip}
 				/>
 			);
 		})
-	       )
+		)
 	}
 
 	render() {
-		const {classes} = this.props;
-		const {filterBy} = this.props.controllerState;
-		const {tab} = this.state;
-		return ( 
-		<div >
-                <AppBar position="static">
-                    <Tabs
-                        value={tab}
-                        variant="scrollable"
-                        scrollButtons="auto"
-                        aria-label="simple tabs example"
-                        onChange={(e, value) => this.setState({ tab: value })}
-                    >
-                        <Tab label="One element chart" value="simple" />
-                        <Tab label="SuperImposed chart" value="super" />
-                    </Tabs>
-                </AppBar>
-                {tab === "simple" && 
-                <div>
-                    <AutoComplete
-                        label='Flute'
-                        value={this.props.controllerState.tracker_fluteType}
-                        suggestions={this.state.fluteTypes}
-                        onInputChange={this.onFluteTypeUpdate}
-                        onValueChange={this.onFluteTypeChange}
-                        style={styles.autoComplete}
-                        maxSearchResults={300}
-                        openOnFocus={true}
-                        listStyle={{ maxHeight: 300, overflow: 'auto' }}
-                    /> 
-                    <AutoComplete
-                        label='Structure'
-                        value={this.props.controllerState.tracker_hmStructType}
-                        suggestions={this.state.structureTypes}
-                        onInputChange={this.onStructureTypeUpdate}
-                        onValueChange={this.onStructureTypeChange}
-                        style={styles.autoComplete}
-                        maxSearchResults={300}
-                        openOnFocus={true}
-                        listStyle={{ maxHeight: 300, overflow: 'auto' }}
-                    /> 
-                     <AutoComplete
-                        label='Config'
-                        value={this.props.controllerState.tracker_hmConfigType}
-                        suggestions={this.state.configTypes}
-                        onInputChange={this.onConfigTypeUpdate}
-                        onValueChange={this.onConfigTypeChange}
-                        style={styles.autoComplete}
-                        maxSearchResults={300}
-                        openOnFocus={true}
-                        listStyle={{ maxHeight: 300, overflow: 'auto' }}
-                    /> 
-                     <AutoComplete
-                        label='Set'
-                        value={this.props.controllerState.tracker_hmSetType}
-                        suggestions={this.state.setTypes}
-                        onInputChange={this.onSetTypeUpdate}
-                        onValueChange={this.onSetTypeChange}
-                        style={styles.autoComplete}
-                        maxSearchResults={300}
-                        openOnFocus={true}
-                        listStyle={{ maxHeight: 300, overflow: 'auto' }}
-                    /> 
-                    <AutoComplete
-                        label='HalfMoon BarCode'
-                        value={this.props.controllerState.tracker_partBarcode}
-                        suggestions={this.state.barcodeTypes}
-                        onInputChange={this.onBarcodeTypeUpdate}
-                        onValueChange={this.onBarcodeTypeChange}
-                        style={styles.autoComplete}
-                        maxSearchResults={300}
-                        openOnFocus={true}
-                        listStyle={{ maxHeight: 300, overflow: 'auto' }}
-                    /> 
-                    <div className={classes.inputContainer}>
-                        <TextField
-                            select
-                            label="Run Number"
-                            className={classes.selectField}
-                            InputProps={{ className: classes.textField }}
-                            value={this.props.controllerState.tracker_runTypeNumber}
-                            onChange={this.onRunTypeNumberChange}
-                            suggestions={this.state.runs}
-                            SelectProps={{
-                                MenuProps: {
-                                    className: classes.itemMenu,
-                                }
-                            }}
-                        >
-                        {this.renderRunNumbers()}
-                         </TextField>
-                    </div>
-                </div>
-                }
-                {tab === "super" && 
-                <div>
-                    <AutoComplete
-                        label='Flute'
-                        value={this.props.controllerState.tracker_fluteType}
-                        suggestions={this.state.fluteTypes}
-                        onInputChange={this.onFluteTypeUpdate}
-                        onValueChange={this.onFluteTypeChange}
-                        style={styles.autoComplete}
-                        maxSearchResults={300}
-                        openOnFocus={true}
-                        listStyle={{ maxHeight: 300, overflow: 'auto' }}
-                    /> 
-                    <AutoComplete
-                        label='Structure'
-                        value={this.props.controllerState.tracker_hmStructType}
-                        suggestions={this.state.structureTypes}
-                        onInputChange={this.onStructureTypeUpdate}
-                        onValueChange={this.onStructureTypeChange}
-                        style={styles.autoComplete}
-                        maxSearchResults={300}
-                        openOnFocus={true}
-                        listStyle={{ maxHeight: 300, overflow: 'auto' }}
-                    /> 
-                     <AutoComplete
-                        label='Config'
-                        value={this.props.controllerState.tracker_hmConfigType}
-                        suggestions={this.state.configTypes}
-                        onInputChange={this.onConfigTypeUpdate}
-                        onValueChange={this.onConfigTypeChange}
-                        style={styles.autoComplete}
-                        maxSearchResults={300}
-                        openOnFocus={true}
-                        listStyle={{ maxHeight: 300, overflow: 'auto' }}
-                    /> 
-                    <AutoComplete
-                        label='Set'
-                        value={this.props.controllerState.tracker_hmSetType}
-                        suggestions={this.state.setTypes}
-                        onInputChange={this.onSetTypeUpdate}
-                        onValueChange={this.onSetTypeChange}
-                        style={styles.autoComplete}
-                        maxSearchResults={300}
-                        openOnFocus={true}
-                        listStyle={{ maxHeight: 300, overflow: 'auto' }}
-                    /> 
-                    <AutoComplete
-                        label='HalfMoon BarCode'
-                        value={this.props.controllerState.tracker_partBarcode}
-                        suggestions={this.state.barcodeTypes}
-                        onInputChange={this.onBarcodeTypeUpdate}
-                        onValueChange={this.onBarcodeTypeChange}
-                        style={styles.autoComplete}
-                        maxSearchResults={300}
-                        openOnFocus={true}
-                        listStyle={{ maxHeight: 300, overflow: 'auto' }}
-                    /> 
-                    <div className={classes.inputContainer}>
-                        <TextField
-                            select
-                            label="Run Number"
-                            className={classes.selectField}
-                            InputProps={{ className: classes.textField }}
-                            value={this.props.controllerState.tracker_runTypeNumber}
-                            onChange={this.onRunTypeNumberChange}
-                            suggestions={this.state.runs}
-                            SelectProps={{
-                                MenuProps: {
-                                    className: classes.itemMenu,
-                                }
-                            }}
-                        >
-                        {this.renderRunNumbers()}
-                        </TextField>
-                    </div>
-                    <Button
-                        //disabled={this.props.controllerState.tracker_runName === '' 
-                        //&& this.props.controllerState.tracker_runTypeNumber === ''}
-                        variant="contained"
-                        className={classes.button}
-                        onClick={this.onIDAdd}>
-                        Add ID
-                    </Button>
-                    <br/>
-                    <div>
-                        <Typography variant="subtitle2" gutterBottom style={{ marginTop: 10 }}>
-                            Selected Ids:
-                        </Typography>
-                        <div style={styles.wrapper}>
-                            {this.renderChip()}
-                        </div>
-                    </div>
-                </div>
-                }
-                
-        </div >
+		const { classes } = this.props;
+		const { filterBy } = this.props.controllerState;
+		const { tab } = this.state;
+		return (
+			<div >
+				<AppBar position="static">
+					<Tabs
+						value={tab}
+						variant="scrollable"
+						scrollButtons="auto"
+						aria-label="simple tabs example"
+						onChange={(e, value) => this.setState({ tab: value })}
+					>
+						<Tab label="One element chart" value="simple" />
+						<Tab label="SuperImposed chart" value="super" />
+					</Tabs>
+				</AppBar>
+				{tab === "simple" &&
+					<div>
+						<AutoComplete
+							label='Flute'
+							value={this.props.controllerState.tracker_fluteType}
+							suggestions={this.state.fluteTypes}
+							onInputChange={this.onFluteTypeUpdate}
+							onValueChange={this.onFluteTypeChange}
+							style={styles.autoComplete}
+							maxSearchResults={300}
+							openOnFocus={true}
+							listStyle={{ maxHeight: 300, overflow: 'auto' }}
+						/>
+						<AutoComplete
+							label='Structure'
+							value={this.props.controllerState.tracker_hmStructType}
+							suggestions={this.state.structureTypes}
+							onInputChange={this.onStructureTypeUpdate}
+							onValueChange={this.onStructureTypeChange}
+							style={styles.autoComplete}
+							maxSearchResults={300}
+							openOnFocus={true}
+							listStyle={{ maxHeight: 300, overflow: 'auto' }}
+						/>
+						<AutoComplete
+							label='Config'
+							value={this.props.controllerState.tracker_hmConfigType}
+							suggestions={this.state.configTypes}
+							onInputChange={this.onConfigTypeUpdate}
+							onValueChange={this.onConfigTypeChange}
+							style={styles.autoComplete}
+							maxSearchResults={300}
+							openOnFocus={true}
+							listStyle={{ maxHeight: 300, overflow: 'auto' }}
+						/>
+						<AutoComplete
+							label='Set'
+							value={this.props.controllerState.tracker_hmSetType}
+							suggestions={this.state.setTypes}
+							onInputChange={this.onSetTypeUpdate}
+							onValueChange={this.onSetTypeChange}
+							style={styles.autoComplete}
+							maxSearchResults={300}
+							openOnFocus={true}
+							listStyle={{ maxHeight: 300, overflow: 'auto' }}
+						/>
+						<AutoComplete
+							label='HalfMoon BarCode'
+							value={this.props.controllerState.tracker_partBarcode}
+							suggestions={this.state.barcodeTypes}
+							onInputChange={this.onBarcodeTypeUpdate}
+							onValueChange={this.onBarcodeTypeChange}
+							style={styles.autoComplete}
+							maxSearchResults={300}
+							openOnFocus={true}
+							listStyle={{ maxHeight: 300, overflow: 'auto' }}
+						/>
+						<div className={classes.inputContainer}>
+							<TextField
+								select
+								label="Run Number"
+								className={classes.selectField}
+								InputProps={{ className: classes.textField }}
+								value={this.props.controllerState.tracker_runTypeNumber}
+								onChange={this.onRunTypeNumberChange}
+								suggestions={this.state.runs}
+								SelectProps={{
+									MenuProps: {
+										className: classes.itemMenu,
+									}
+								}}
+							>
+								{this.renderRunNumbers()}
+							</TextField>
+						</div>
+					</div>
+				}
+				{tab === "super" &&
+					<div>
+						<AutoComplete
+							label='Flute'
+							value={this.props.controllerState.tracker_fluteType}
+							suggestions={this.state.fluteTypes}
+							onInputChange={this.onFluteTypeUpdate}
+							onValueChange={this.onFluteTypeChange}
+							style={styles.autoComplete}
+							maxSearchResults={300}
+							openOnFocus={true}
+							listStyle={{ maxHeight: 300, overflow: 'auto' }}
+						/>
+						<AutoComplete
+							label='Structure'
+							value={this.props.controllerState.tracker_hmStructType}
+							suggestions={this.state.structureTypes}
+							onInputChange={this.onStructureTypeUpdate}
+							onValueChange={this.onStructureTypeChange}
+							style={styles.autoComplete}
+							maxSearchResults={300}
+							openOnFocus={true}
+							listStyle={{ maxHeight: 300, overflow: 'auto' }}
+						/>
+						<AutoComplete
+							label='Config'
+							value={this.props.controllerState.tracker_hmConfigType}
+							suggestions={this.state.configTypes}
+							onInputChange={this.onConfigTypeUpdate}
+							onValueChange={this.onConfigTypeChange}
+							style={styles.autoComplete}
+							maxSearchResults={300}
+							openOnFocus={true}
+							listStyle={{ maxHeight: 300, overflow: 'auto' }}
+						/>
+						<AutoComplete
+							label='Set'
+							value={this.props.controllerState.tracker_hmSetType}
+							suggestions={this.state.setTypes}
+							onInputChange={this.onSetTypeUpdate}
+							onValueChange={this.onSetTypeChange}
+							style={styles.autoComplete}
+							maxSearchResults={300}
+							openOnFocus={true}
+							listStyle={{ maxHeight: 300, overflow: 'auto' }}
+						/>
+						<AutoComplete
+							label='HalfMoon BarCode'
+							value={this.props.controllerState.tracker_partBarcode}
+							suggestions={this.state.barcodeTypes}
+							onInputChange={this.onBarcodeTypeUpdate}
+							onValueChange={this.onBarcodeTypeChange}
+							style={styles.autoComplete}
+							maxSearchResults={300}
+							openOnFocus={true}
+							listStyle={{ maxHeight: 300, overflow: 'auto' }}
+						/>
+						<div className={classes.inputContainer}>
+							<TextField
+								select
+								label="Run Number"
+								className={classes.selectField}
+								InputProps={{ className: classes.textField }}
+								value={this.props.controllerState.tracker_runTypeNumber}
+								onChange={this.onRunTypeNumberChange}
+								suggestions={this.state.runs}
+								SelectProps={{
+									MenuProps: {
+										className: classes.itemMenu,
+									}
+								}}
+							>
+								{this.renderRunNumbers()}
+							</TextField>
+						</div>
+						<Button
+							//disabled={this.props.controllerState.tracker_runName === '' 
+							//&& this.props.controllerState.tracker_runTypeNumber === ''}
+							variant="contained"
+							className={classes.button}
+							onClick={this.onIDAdd}>
+							Add ID
+						</Button>
+						<br />
+						<div>
+							<Typography variant="subtitle2" gutterBottom style={{ marginTop: 10 }}>
+								Selected Ids:
+							</Typography>
+							<div style={styles.wrapper}>
+								{this.renderChip()}
+							</div>
+						</div>
+					</div>
+				}
+
+			</div >
 		);
 	}
 }
