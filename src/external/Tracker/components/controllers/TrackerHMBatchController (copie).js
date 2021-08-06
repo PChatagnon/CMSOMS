@@ -496,29 +496,39 @@ class TrackerHMBatchController extends Component {
 		this.getBatchNumbers(this.state.batchRange[0], this.state.batchRange[1])
 			.then((batchNumbersList) => {
 
+				const serializePromise = promiseFactoryList =>
+					promiseFactoryList.reduce(serialize, Promise.resolve([]));
 
-				const promises = [];
-				batchNumbersList.map((c) => {
-					promises.push(this.getBarcodeAndRun(c))
-				})
+				const serialize = async (promise, promiseFactory) => {
+					const promiseResult = await promise;
+					const res = await promiseFactory();
+					return [...promiseResult, res];
+				};
 
-				Promise.all(promises)
-					.then(results => {
-						let barcodeList = [];
-						barcodeList = results.map((val, index) => { return val; });
-						return barcodeList.map(s =>
-							controllerState.tracker_data.push({
-								tracker_id: "Batch " + s[0].split('_')[0],
-								barcodeRunList: this.filterRuns(s)
-							})
-						)
-					}).then(() => {
-						this.props.updateState(controllerState);
-						this.setState({ loading: false });
-						console.log(this.props.controllerState);
+				const promiseExample = (c) =>
+					new Promise((res) => {
+						//console.log("here " + c)
+						res(this.getBarcodeAndRun(c));
 					});
 
+				const funcs = batchNumbersList.map(c => async () => await promiseExample(c));
 
+				return serializePromise(funcs).then(res => {
+					let barcodeList = [];
+					barcodeList = res.map((val, index) => { return val; });
+					//this.columns.columns = filteredColumns;
+					//console.log(barcodeList);
+					return barcodeList.map(s =>
+						controllerState.tracker_data.push({
+							tracker_id: "Batch " + s[0].split('_')[0],
+							barcodeRunList: this.filterRuns(s)
+						})
+					)
+				}).then(() => {
+					this.props.updateState(controllerState);
+					this.setState({ loading: false });
+					console.log(this.props.controllerState);
+				});
 			})
 	}
 
