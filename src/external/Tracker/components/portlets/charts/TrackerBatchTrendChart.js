@@ -2,6 +2,8 @@ import React, { Component } from 'react';
 import Highcharts from 'highcharts';
 import HighchartsExporting from 'highcharts/modules/exporting';
 import HighchartsOfflineExporting from 'highcharts/modules/offline-exporting';
+import HighchartsAccesibility from 'highcharts/modules/accessibility';
+HighchartsAccesibility(Highcharts);
 import Resthub from '../../../../../components/providers/Resthub';
 //import { generateId, getRandomColor } from '../../../../../utils/utils';
 import { generateId, setHighchartsLibURL } from '../../../../../utils/utils';
@@ -11,8 +13,10 @@ import Checkbox from '@material-ui/core/Checkbox';
 HighchartsExporting(Highcharts);
 HighchartsOfflineExporting(Highcharts);
 setHighchartsLibURL(Highcharts);
-import { withStyles } from '@material-ui/core/styles';
-import CircularProgress from '@material-ui/core/CircularProgress';
+import HC_more from 'highcharts/highcharts-more';
+HC_more(Highcharts);
+import bellCurve from "highcharts/modules/histogram-bellcurve";
+bellCurve(Highcharts);
 
 
 
@@ -27,9 +31,7 @@ import Button from '@material-ui/core/Button';
 import SwapHorizIcon from '@material-ui/icons/SwapHoriz';
 import IconButton from '@material-ui/core/IconButton';
 import TextField from '@material-ui/core/TextField';
-import bellCurve from "highcharts/modules/histogram-bellcurve";
-import blue from '@material-ui/core/colors/blue';
-bellCurve(Highcharts);
+
 
 const RESTHUB_URL = '/tracker-resthub';
 
@@ -65,6 +67,8 @@ class TrackerBatchTrendChart extends Component {
             buttonText: "Display",
             buttonColor: "primary",
             data2D: [],
+            errorX: [],
+            errorY: [],
             dataFreq: [],
             nbBins: -1
         }
@@ -147,6 +151,20 @@ class TrackerBatchTrendChart extends Component {
         return reduced.reduce((a, b) => a + b) / array.length;
     }
 
+    min_max(array, i) {
+        let reduced = array.map(a => a[i]);
+        var min = Math.min(...reduced);
+        var max = Math.max(...reduced);
+        return [min, max]
+    }
+
+    sigma(array, i) {
+        const n = array.length
+        let reduced = array.map(a => a[i]);
+        const mean = reduced.reduce((a, b) => a + b) / n
+        return Math.sqrt(reduced.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / n)
+    }
+
     createSQL = (element, sql, i) => {
         if (i == 0) {
             sql = sql + " where (t.SENSOR='" + element.barcode + "' and t.run_number=" + element.run + ")";
@@ -158,6 +176,8 @@ class TrackerBatchTrendChart extends Component {
     getBatch = (batch) => {
         let Batch = {};
         Batch['data'] = [];
+        Batch['min_max'] = [];
+        Batch['sigma'] = [];
         Batch['ID'] = batch.tracker_id;
         let mean_data = [];
         let retrieved_data = [];
@@ -172,8 +192,6 @@ class TrackerBatchTrendChart extends Component {
         return Resthub.json2(sqli, null, null, null, configuration.resthubUrl)   /// BE CAREFUL WITH PAGE SIZE
             .then(resp => {
                 const data = resp.data.data;
-                console.log("data")
-                console.log(data)
                 data.forEach(d => {
                     retrieved_data.push([d[this.state.labelX.name], d[this.state.labelY.name]])
                 });
@@ -187,9 +205,9 @@ class TrackerBatchTrendChart extends Component {
                 }
                 else mean_data = [[this.average(retrieved_data, 0), this.average(retrieved_data, 1)]];
 
-                console.log("retrieved_data")
-                console.log(mean_data)
                 Batch['data'] = mean_data;
+                Batch['min_max'] = [this.min_max(retrieved_data, 0), this.min_max(retrieved_data, 1)];
+                Batch['sigma'] = [this.sigma(retrieved_data, 0), this.sigma(retrieved_data, 1)];
                 return Batch;
             }).catch(error => this.props.onFailure(error));
 
@@ -207,6 +225,8 @@ class TrackerBatchTrendChart extends Component {
                 this.create2Dplot(configuration);
 
                 var data2D = [];
+                var errorX = [];
+                var errorY = [];
 
                 const promises = [];
                 query.tracker_data.map((c) => {
@@ -219,27 +239,74 @@ class TrackerBatchTrendChart extends Component {
                         console.log("results")
                         console.log(results)
                         batchdataList = results.map((val, index) => { return val; });
-                        return batchdataList.map(s => {
+                        return batchdataList.map((s, index) => {
                             let seria = {};
+                            let sigma_seria = {};
+                            let sigmaX_seria = {};
+
+                            var color = Highcharts.getOptions().colors[index%10];
+
+                            console.log(index)
+                            console.log(color)
                             seria['marker'] = {
-                                radius: 7
+                                radius: 7,
+                                symbol: 'circle'
                             }
                             seria['data'] = s.data;
+                            console.log("s.data");
+                            console.log(s.data);
                             seria['name'] = s.ID;
-                            seria['color'] = Highcharts.getOptions().colors[this.colorCount];
+                            seria['id'] = s.ID;
+                            seria['color'] = color;
                             seria['tooltip'] = {
                                 pointFormatter: function () {
                                     return `<span style='color: ${this.series.color}'>\u25CF</span> <b>" X "${this.x}</b> <b>" Y "${this.y}</b><br />`;
                                 }
                             }
-                            this.colorCount = this.colorCount + 1;
+                           
                             data2D.push(seria);
+
+                            sigma_seria['type'] = 'line';   
+                            sigma_seria['linkedTo'] = s.ID;
+                            sigma_seria['name'] = s.ID;
+                            sigma_seria['marker'] = {radius: 0}
+                            sigma_seria['lineWidth'] = 2;
+                            sigma_seria['data'] = [[s.data[0][0],s.data[0][1]-s.sigma[1]], [s.data[0][0],s.data[0][1]+s.sigma[1]]];//[[s.data[0]-s.sigma[0], s.data[0]+s.sigma[0]]];
+                            sigma_seria['tooltip'] = {
+                                pointFormatter: function () {
+                                    return `<span style='color: ${this.series.color}'>\u25CF</span> <b>" X "${this.x}</b> <b>" Y "${this.y}</b><br />`;
+                                }
+                            };
+                            sigma_seria['color'] = color;
+
+                            errorY.push(sigma_seria);
+
+                            sigmaX_seria['type'] = 'line';
+                            sigmaX_seria['linkedTo'] = s.ID;
+                            sigmaX_seria['name'] = s.ID;
+                            sigmaX_seria['marker'] = {radius: 0}
+                            sigmaX_seria['lineWidth'] = 2;
+                            sigmaX_seria['data'] = [[s.data[0][0]-s.sigma[0], s.data[0][1]],[s.data[0][0]+s.sigma[0], s.data[0][1]]];
+                            sigmaX_seria['color'] = color;
+                            sigmaX_seria['tooltip'] = {
+                                pointFormatter: function () {
+                                    return `<span style='color: ${this.series.color}'>\u25CF</span> <b>" X "${this.x}</b> <b>" Y "${this.y}</b><br />`;
+                                }
+                            };
+                            errorX.push(sigmaX_seria);
+
+                            console.log(color)
+
                             this.chart.addSeries(seria, false);
+                            this.chart.addSeries(sigma_seria, false);
+                            this.chart.addSeries(sigmaX_seria, false);
 
                         })
                     }).then(() => {
                         this.setState({ displayed: true })
                         this.setState({ data2D: data2D })
+                        this.setState({ errorY: errorY })
+                        this.setState({ errorX: errorX })
                         this.chart.setTitle({ text: this.state.labelY.name + " VS " + this.state.labelX.name });
                         this.chart.redraw();
                         return this.props.hideLoader();
@@ -320,12 +387,6 @@ class TrackerBatchTrendChart extends Component {
                 panKey: 'shift',
                 type: 'scatter'
             },
-            plotOptions: {
-                series: {
-                    pointStart: 0,
-                    lineWidth: 2
-                }
-            },
             credits: {
                 enabled: false
             },
@@ -353,7 +414,6 @@ class TrackerBatchTrendChart extends Component {
     createFreqplot = () => {
 
         var binOption = (this.state.nbBins > 0) ? parseInt(this.state.nbBins) : 'square-root';
-        console.log('nbbins ' + binOption)
 
         const options = {
             chart: {
@@ -366,7 +426,9 @@ class TrackerBatchTrendChart extends Component {
                 title: { text: this.state.labelX.name },
                 alignTicks: false
             }],
-
+            title: {
+                text: null
+            },
             yAxis: [{
                 title: { text: '' }
             }, {
@@ -397,12 +459,6 @@ class TrackerBatchTrendChart extends Component {
                 panKey: 'shift',
                 type: 'scatter'
             },
-            plotOptions: {
-                series: {
-                    pointStart: 0,
-                    lineWidth: 0
-                }
-            },
             credits: {
                 enabled: false
             },
@@ -423,6 +479,7 @@ class TrackerBatchTrendChart extends Component {
             series: []
         };
 
+        console.log("this. ID "+this.id)
         this.chart = new Highcharts.chart(this.id, options);
 
     }
@@ -481,8 +538,10 @@ class TrackerBatchTrendChart extends Component {
         var formerY = this.state.labelY;
         this.setState({ labelX: formerY });
         this.setState({ labelY: formerX });
+        if(this.state.displayed){
         this.setState({ buttonText: "UPDATE" })
         this.setState({ buttonColor: "secondary" })
+        }
     }
 
     handleChangeX = (event) => {
@@ -547,6 +606,7 @@ class TrackerBatchTrendChart extends Component {
         }
         else if (this.state.displayed && this.state.mode == '2D' && this.state.buttonText != "UPDATED") {
             this.create2Dplot();
+            //handle swapping XY of the data
             var newdata2D = this.state.data2D.map(
                 (serie) => {
                     var old_varx = serie['data'][0][0];
@@ -557,6 +617,32 @@ class TrackerBatchTrendChart extends Component {
                     return serie;
                 });
             this.setState({ data2D: newdata2D });
+
+            //handle swapping error bars
+            var newerrorX = this.state.errorY.map(
+                (serie) => {
+                    serie['type'] = 'line';
+                    var old_varx = serie['data'][0][0];
+                    var old_low = serie['data'][0][1];
+                    var old_high = serie['data'][1][1];
+                    serie['data'] = [[old_low,old_varx],[old_high,old_varx]];
+                    this.chart.addSeries(serie, false);
+                    return serie;
+                });
+            this.setState({ errorX: newerrorX });
+
+            var newerrorY = this.state.errorX.map(
+                (serie) => {
+                    serie['type'] = 'line';
+                    var old_vary = serie['data'][0][1];
+                    var old_left = serie['data'][0][0];
+                    var old_right = serie['data'][1][0];
+                    serie['data'] = [[old_vary,old_left],[old_vary,old_right]];
+                    this.chart.addSeries(serie, false);
+                    return serie;
+                });
+            this.setState({ errorY: newerrorY });
+
             this.chart.redraw();
             this.props.hideLoader();
             this.setState({ buttonText: "UPDATED" })

@@ -110,7 +110,7 @@ class TrackerHMBatchController extends Component {
 			url: '',
 			loading: false,
 			tab: "simple",
-			batchLimits: [34330, 34351],//[12340, 12348],//
+			batchLimits: [34230, 34451],//[12340, 12348],//
 			batchRange: [34350, 34351]//[12340, 12348]//
 		}
 	}
@@ -506,11 +506,14 @@ class TrackerHMBatchController extends Component {
 					.then(results => {
 						let barcodeList = [];
 						barcodeList = results.map((val, index) => { return val; });
-						return barcodeList.map(s =>
-							controllerState.tracker_data.push({
-								tracker_id: "Batch " + s[0].split('_')[0],
-								barcodeRunList: this.filterRuns(s)
-							})
+						return barcodeList.map(s => {
+							if (!controllerState.tracker_data.find(item => item.tracker_id === ("Batch " + s[0].split('_')[0]))) {
+								controllerState.tracker_data.push({
+									tracker_id: "Batch " + s[0].split('_')[0],
+									barcodeRunList: this.filterRuns(s)
+								})
+							}
+						}
 						)
 					}).then(() => {
 						this.props.updateState(controllerState);
