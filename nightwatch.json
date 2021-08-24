@@ -1,0 +1,57 @@
+{
+  "src_folders" : ["testing/tests"],
+  "output_folder" : "reports",
+  "custom_commands_path" : "testing/custom_commands",
+  "custom_assertions_path" : "",
+  "page_objects_path" : "",
+  "globals_path" : "testing/globals",
+  "test_workers": {
+    "enabled": true,
+    "workers": "auto",
+    "detailed_output": true
+  },
+
+  "selenium" : {
+    "start_process" : true,
+    "server_path" : "./testing/bin/selenium-server-standalone-3.9.0.jar",
+    "log_path" : "",
+    "port" : 4445,
+    "cli_args" : {
+      "webdriver.chrome.driver" : "",
+      "webdriver.gecko.driver" : "./testing/bin/geckodriver",
+      "webdriver.edge.driver" : ""
+    }
+  },
+
+  "test_settings" : {
+    "default" : {
+      "launch_url" : "http://vocms0183.cern.ch",
+      "selenium_port"  : 4445,
+      "selenium_host"  : "localhost",
+      "silent": true,
+      "screenshots" : {
+        "enabled" : false,
+        "path" : ""
+      },
+      "desiredCapabilities": {
+        "browserName": "firefox",
+        "marionette": true,
+        "moz:firefoxOptions": {
+            "args" : ["-headless"]
+          }
+      }
+    },
+
+    "chrome" : {
+      "desiredCapabilities": {
+        "browserName": "chrome"
+      }
+    },
+
+    "edge" : {
+      "desiredCapabilities": {
+        "browserName": "MicrosoftEdge"
+      }
+    }
+  }
+}

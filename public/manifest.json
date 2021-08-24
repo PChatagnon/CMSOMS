@@ -1,0 +1,8 @@
+{
+  "short_name": "OMS Portal",
+  "name": "CMS OMS GUI",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}

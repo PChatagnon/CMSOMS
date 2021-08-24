@@ -1,0 +1,47 @@
+stages:
+  - build
+  - test
+  - deploy
+  
+before_script:
+  - eval $(ssh-agent -s)
+  - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null  
+  - mkdir -p ~/.ssh
+  - chmod 700 ~/.ssh  
+  - echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+  - chmod 644 ~/.ssh/known_hosts
+  
+
+build:
+  stage: build
+  script:
+    - ./build.sh
+    
+test:
+  stage: test
+  script:
+    - ./test.sh
+
+deploy_master:
+  stage: deploy
+  only:
+    - master
+    - tags
+  script:
+    - ./build.sh
+    - ./package.sh
+    - cp rpmbuild/RPMS/x86_64/oms-portal-gui*.rpm oms-portal-gui.rpm
+    - scp oms-portal-gui.rpm cmsomsdev@vocms0184:~/ci
+    - ssh cmsomsdev@vocms0184 "cd ~/ci && sudo rpm -U --force oms-portal-gui.rpm && rm oms-portal-gui.rpm"
+
+deploy_development:
+  stage: deploy
+  only:
+    - development
+  script:
+    - ./build.sh
+    - ./package.sh
+    - cp rpmbuild/RPMS/x86_64/oms-portal-gui*.rpm oms-portal-gui.rpm
+    - scp oms-portal-gui.rpm cmsomsdev@vocms0183:~/ci
+    - ssh cmsomsdev@vocms0183 "cd ~/ci && sudo rpm -U --force oms-portal-gui.rpm && rm oms-portal-gui.rpm"
+

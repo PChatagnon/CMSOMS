@@ -1,0 +1,54 @@
+# Include some modules that are not included by OS
+LoadModule status_module modules/mod_status.so
+LoadModule proxy_uwsgi_module modules/mod_proxy_uwsgi.so
+
+# Increase header size to 64K
+LimitRequestFieldSize 64000
+Header edit Set-Cookie ^(.*)$ $1;HttpOnly;Secure
+
+# Root location
+
+<Location />
+
+  # Move from EVERYWHERE to /index.html
+  # with exception to SSO, proxies and known files and directories
+
+  RewriteEngine On
+  RewriteBase /
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !redirect_uri
+  RewriteCond %{REQUEST_FILENAME} !Shibboleth\.sso$
+  RewriteCond %{REQUEST_FILENAME} !^proxy:
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_URI} !^/server-status.*
+  RewriteRule .* /index.html [L]
+
+</Location>
+
+# Move to HTTPS everything
+
+RewriteEngine On
+RewriteCond %{HTTPS} !=on
+RewriteCond %{REQUEST_URI} !^/server-status.*
+RewriteCond %{REQUEST_URI} !^/agg/.*
+RewriteCond %{REQUEST_URI} !^/(pixel-agg|pixel-agg-dev1|pixel1-agg|pixel2-agg|pixel3-agg|gem-agg|pps-agg|ecal-agg|csc-agg)/.*
+RewriteRule ^/?(.*) https://%{SERVER_NAME}/$1 [R,L]
+
+# Caching (force revalidation for static content)
+<filesMatch "\.(html|htm|js|css)$">
+#    FileETag None
+#    Header unset ETag
+#    Header set Cache-Control "max-age=0, no-cache, must-revalidate"
+     Header set Cache-Control "no-cache, must-revalidate"
+     Header set Pragma "no-cache"
+#    Header set Expires "Wed, 11 Jan 1984 05:00:00 GMT"
+</filesMatch>
+
+ExtendedStatus On
+<Location "/server-status">
+  SetHandler server-status
+  Order deny,allow
+  Deny from all
+  Allow from localhost
+</Location>
