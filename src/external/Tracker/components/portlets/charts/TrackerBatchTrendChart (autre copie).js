@@ -23,6 +23,7 @@ bellCurve(Highcharts);
 import Radio from '@material-ui/core/Radio';
 import RadioGroup from '@material-ui/core/RadioGroup';
 import FormControl from '@material-ui/core/FormControl';
+import FormLabel from '@material-ui/core/FormLabel';
 import InputLabel from '@material-ui/core/InputLabel';
 import MenuItem from '@material-ui/core/MenuItem';
 import Select from '@material-ui/core/Select';
@@ -97,28 +98,28 @@ class TrackerBatchTrendChart extends Component {
         this.shouldResize();
     }
 
-    loadMeta = () => {
+    loadMeta = () => {  //To change to
         const { configuration } = this.props;
-        let sql2 = configuration.url;
-        
+        let sql = configuration.url;
+
+        console.log(this.props.query);
+
+        let sql2 = sql;
         if (this.props.query.tracker_data.length > 0) {
             Object.entries(this.props.query.tracker_data[0].barcodeRunList[0]).forEach(ef => {
                 sql2 = sql2.replace(ef[0], "'" + ef[1] + "'");
 
             })
-            sql2 = sql2.replace("tracker_hmStructType", "'" + this.props.query.tracker_hmStructType + "'")
-            sql2 = sql2.replace("tracker_fluteType", "'" + this.props.query.tracker_fluteType + "'")
-            sql2 = sql2.replace("tracker_hmSetType", "'" + this.props.query.tracker_hmSetType + "'")
-            sql2 = sql2.replace("tracker_hmConfigType", "'" + this.props.query.tracker_hmConfigType + "'")
-
-
         }
+        console.log("sql modified sql2 " + sql2)
+
 
         return Resthub.query("SELECT * FROM ( " + sql2 + " ) meta  ", this.resthubUrl)
             .then(response => {
                 return Resthub.meta(response.data, this.resthubUrl)
                     .then(response => {
-               
+                        console.log("here in meta response");
+                        console.log(response);
                         this.columns = response.data.columns.map(column => {
                             return {
                                 title: column.name,
@@ -164,29 +165,12 @@ class TrackerBatchTrendChart extends Component {
         return Math.sqrt(reduced.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / n)
     }
 
-    createSQL = (element, sqli, sqlf, i) => {
-
-        const { configuration } = this.props;
-        const partBarcode = configuration.partBarcode; // tracker_partBarcode
-        const runTypeNumber = configuration.runTypeNumber; // tracker_runTypeNumber
-
-        sqlf = sqlf.replace(partBarcode, "'" + element.tracker_partBarcode + "'")
-        sqlf = sqlf.replace(runTypeNumber, "'" + element.tracker_runTypeNumber + "'")
-        sqlf = sqlf.substring(5, sqlf.length);
-        sqlf = "(" + sqlf + ")";
-
+    createSQL = (element, sql, i) => {
         if (i == 0) {
-            sqli = sqli + " where " + sqlf;
+            sql = sql + " where (t.SENSOR='" + element.barcode + "' and t.run_number=" + element.run + ")";
         }
-        else sqli = sqli + " or " + sqlf;
-
-        sqli = sqli.replace("tracker_hmStructType", "'" + this.props.query.tracker_hmStructType + "'")
-        sqli = sqli.replace("tracker_fluteType", "'" + this.props.query.tracker_fluteType + "'")
-        sqli = sqli.replace("tracker_hmSetType", "'" + this.props.query.tracker_hmSetType + "'")
-        sqli = sqli.replace("tracker_hmConfigType", "'" + this.props.query.tracker_hmConfigType + "'")
-
-
-        return sqli;
+        else sql = sql + " or (t.SENSOR='" + element.barcode + "' and t.run_number=" + element.run + ")";
+        return sql;
     }
 
     getBatch = (batch) => {
@@ -201,10 +185,11 @@ class TrackerBatchTrendChart extends Component {
         const { configuration } = this.props;
         this.sql = configuration.url;
         let sqli = this.sql.substring(0, this.sql.indexOf('where'));
-        let sqlf = this.sql.substring(this.sql.indexOf('where'), this.sql.length);
-        batch.barcodeRunList.map((element, i) => { sqli = this.createSQL(element, sqli, sqlf, i) });
+        batch.barcodeRunList.map((element, i) => { sqli = this.createSQL(element, sqli, i) });
 
-        return Resthub.json2(sqli, null, null, null, configuration.resthubUrl) 
+        console.log(sqli)
+
+        return Resthub.json2(sqli, null, null, null, configuration.resthubUrl)   /// BE CAREFUL WITH PAGE SIZE
             .then(resp => {
                 const data = resp.data.data;
                 data.forEach(d => {
@@ -251,21 +236,25 @@ class TrackerBatchTrendChart extends Component {
                 Promise.all(promises)
                     .then(results => {
                         let batchdataList = [];
-                       
+                        console.log("results")
+                        console.log(results)
                         batchdataList = results.map((val, index) => { return val; });
                         return batchdataList.map((s, index) => {
                             let seria = {};
                             let sigma_seria = {};
                             let sigmaX_seria = {};
 
-                            var color = (this.state.labelX.name == "Batch nb" || this.state.labelY.name == "Batch nb") ? Highcharts.getOptions().colors[0] : Highcharts.getOptions().colors[index % 10];
+                            var color = (this.state.labelX.name=="Batch nb" || this.state.labelY.name=="Batch nb") ? Highcharts.getOptions().colors[0] : Highcharts.getOptions().colors[index%10];
 
-                           
+                            console.log(index)
+                            console.log(color)
                             seria['marker'] = {
                                 radius: 7,
                                 symbol: 'circle'
                             }
                             seria['data'] = s.data;
+                            console.log("s.data");
+                            console.log(s.data);
                             seria['name'] = s.ID;
                             seria['id'] = s.ID;
                             seria['color'] = color;
@@ -274,15 +263,15 @@ class TrackerBatchTrendChart extends Component {
                                     return `<span style='color: ${this.series.color}'>\u25CF</span> <b>" X "${this.x}</b> <b>" Y "${this.y}</b><br />`;
                                 }
                             }
-
+                           
                             data2D.push(seria);
 
-                            sigma_seria['type'] = 'line';
+                            sigma_seria['type'] = 'line';   
                             sigma_seria['linkedTo'] = s.ID;
                             sigma_seria['name'] = s.ID;
-                            sigma_seria['marker'] = { radius: 0 }
+                            sigma_seria['marker'] = {radius: 0}
                             sigma_seria['lineWidth'] = 2;
-                            sigma_seria['data'] = [[s.data[0][0], s.data[0][1] - s.sigma[1]], [s.data[0][0], s.data[0][1] + s.sigma[1]]];//[[s.data[0]-s.sigma[0], s.data[0]+s.sigma[0]]];
+                            sigma_seria['data'] = [[s.data[0][0],s.data[0][1]-s.sigma[1]], [s.data[0][0],s.data[0][1]+s.sigma[1]]];//[[s.data[0]-s.sigma[0], s.data[0]+s.sigma[0]]];
                             sigma_seria['tooltip'] = {
                                 pointFormatter: function () {
                                     return `<span style='color: ${this.series.color}'>\u25CF</span> <b>" X "${this.x}</b> <b>" Y "${this.y}</b><br />`;
@@ -295,9 +284,9 @@ class TrackerBatchTrendChart extends Component {
                             sigmaX_seria['type'] = 'line';
                             sigmaX_seria['linkedTo'] = s.ID;
                             sigmaX_seria['name'] = s.ID;
-                            sigmaX_seria['marker'] = { radius: 0 }
+                            sigmaX_seria['marker'] = {radius: 0}
                             sigmaX_seria['lineWidth'] = 2;
-                            sigmaX_seria['data'] = [[s.data[0][0] - s.sigma[0], s.data[0][1]], [s.data[0][0] + s.sigma[0], s.data[0][1]]];
+                            sigmaX_seria['data'] = [[s.data[0][0]-s.sigma[0], s.data[0][1]],[s.data[0][0]+s.sigma[0], s.data[0][1]]];
                             sigmaX_seria['color'] = color;
                             sigmaX_seria['tooltip'] = {
                                 pointFormatter: function () {
@@ -305,6 +294,8 @@ class TrackerBatchTrendChart extends Component {
                                 }
                             };
                             errorX.push(sigmaX_seria);
+
+                            console.log(color)
 
                             this.chart.addSeries(seria, false);
                             this.chart.addSeries(sigma_seria, false);
@@ -344,10 +335,12 @@ class TrackerBatchTrendChart extends Component {
                 Promise.all(promises)
                     .then(results => {
                         let batchdataList = [];
-                      
+                        console.log("results")
+                        console.log(results)
                         batchdataList = results.map((val, index) => { return val; });
 
                         return batchdataList.map(s => {
+                            console.log(s)
                             seria.push(s.data[0][0]);
 
                         })
@@ -485,6 +478,8 @@ class TrackerBatchTrendChart extends Component {
             },
             series: []
         };
+
+        console.log("this. ID "+this.id)
         this.chart = new Highcharts.chart(this.id, options);
 
     }
@@ -543,9 +538,9 @@ class TrackerBatchTrendChart extends Component {
         var formerY = this.state.labelY;
         this.setState({ labelX: formerY });
         this.setState({ labelY: formerX });
-        if (this.state.displayed) {
-            this.setState({ buttonText: "UPDATE" })
-            this.setState({ buttonColor: "secondary" })
+        if(this.state.displayed){
+        this.setState({ buttonText: "UPDATE" })
+        this.setState({ buttonColor: "secondary" })
         }
     }
 
@@ -630,7 +625,7 @@ class TrackerBatchTrendChart extends Component {
                     var old_varx = serie['data'][0][0];
                     var old_low = serie['data'][0][1];
                     var old_high = serie['data'][1][1];
-                    serie['data'] = [[old_low, old_varx], [old_high, old_varx]];
+                    serie['data'] = [[old_low,old_varx],[old_high,old_varx]];
                     this.chart.addSeries(serie, false);
                     return serie;
                 });
@@ -642,7 +637,7 @@ class TrackerBatchTrendChart extends Component {
                     var old_vary = serie['data'][0][1];
                     var old_left = serie['data'][0][0];
                     var old_right = serie['data'][1][0];
-                    serie['data'] = [[old_vary, old_left], [old_vary, old_right]];
+                    serie['data'] = [[old_vary,old_left],[old_vary,old_right]];
                     this.chart.addSeries(serie, false);
                     return serie;
                 });
@@ -669,9 +664,12 @@ class TrackerBatchTrendChart extends Component {
     handleLogScale = (event, isChecked) => {
         const type = isChecked ? 'logarithmic' : 'linear';
         this.chart.yAxis[0].update({ type: type });
+        console.log(this.state);
+        console.log(this.AllowDisplay());
     }
 
     handleModeFrequency = (event, isChecked) => {
+        //console.log(this.state);
         const type = isChecked ? 'Freq' : '2D';
         this.setState({ displayed: false })
         this.setState({ mode: type })
@@ -685,6 +683,7 @@ class TrackerBatchTrendChart extends Component {
         this.setState({ mode: type })
         this.setState({ buttonText: "DISPLAY" })
         this.setState({ buttonColor: "primary" })
+        //console.log(this.state);
     }
 
     handleBinChange = (event) => {

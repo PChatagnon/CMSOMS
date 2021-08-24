@@ -85,6 +85,8 @@ class TrackerHMBatchController extends Component {
 
 	static controllerHeight = 400;
  
+
+
 	constructor() {
 		super();
 		this.state = {
@@ -105,7 +107,9 @@ class TrackerHMBatchController extends Component {
 
 	static controllerInit(urlQuery, controller) {
 
-		let urlMetadata = controller.configuration.urlMetadata;//"trker_int2r.c13560";
+		let urlMetadata = "trker_cmsr.c8920";//"trker_int2r.c13560";
+		let urlDatasets = "trker_cmsr.datasets";
+		let urlRuns = "trker_cmsr.runs";
 		let barcodeType = '',
 			lastBarcodeType = '',
 			id = '';
@@ -196,9 +200,9 @@ class TrackerHMBatchController extends Component {
 			this.props.updateState(controllerState);
 		}
 
-		let urlMetadata = this.props.configuration.urlMetadata;// "trker_cmsr.c8920";//"trker_int2r.c13560";
-		let urlDatasets = this.props.configuration.urlDatasets;
-		let urlRuns = this.props.configuration.urlRuns//"trker_cmsr.runs";
+		let urlMetadata = "trker_cmsr.c8920";//"trker_int2r.c13560";
+		let urlDatasets = "trker_cmsr.datasets";
+		let urlRuns = "trker_cmsr.runs";
 		return Resthub.json2("SELECT DISTINCT r.run_number, r.name FROM " + urlRuns + " r, " + urlDatasets + " d, " + urlMetadata + " m where m.part_barcode='" + barcodeType + "' and m.kind_of_hm_flute_id = '" + fluteType + "' and m.KIND_OF_HM_STRUCT_ID= '" + structureType + "' AND m.KIND_OF_HM_CONFIG_ID = '" + configType + "' AND m.KIND_OF_HM_SET_ID = '" + setType + "'  and m.condition_data_set_id = d.id and d.run_id=r.id ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const runs = response.data.data;
@@ -214,7 +218,8 @@ class TrackerHMBatchController extends Component {
 		const fluteType = this.validateFluteType(searchText);
 		if (!fluteType) return;
 		this.updateFlute(fluteType);
-		let urlMetadata = this.props.configuration.urlMetadata;// "trker_cmsr.c8920";//"trker_int2r.c13560";
+
+		let urlMetadata = "trker_cmsr.c8920";//"trker_int2r.c13560";
 		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_STRUCT_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + fluteType + "' ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const structureTypes = response.data.data;
@@ -243,7 +248,7 @@ class TrackerHMBatchController extends Component {
 		if (!structureType) return;
 		this.updateStructure(structureType);
 
-		let urlMetadata = this.props.configuration.urlMetadata;
+		let urlMetadata = "trker_cmsr.c8920";//"trker_int2r.c13560";
 		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_CONFIG_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + structureType + "'", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const configTypes = response.data.data;
@@ -276,7 +281,7 @@ class TrackerHMBatchController extends Component {
 
 		console.log("yooooo je suis la " + configType);
 
-		let urlMetadata = this.props.configuration.urlMetadata;
+		let urlMetadata = "trker_cmsr.c8920";//"trker_int2r.c13560";
 		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_SET_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "'" + " AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "'", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const setTypes = response.data.data;
@@ -305,7 +310,7 @@ class TrackerHMBatchController extends Component {
 		if (!setType) return;
 		this.updateSet(setType);
 
-		let urlMetadata = this.props.configuration.urlMetadata;//"trker_cmsr.c8920";//"trker_int2r.c13560";
+		let urlMetadata = "trker_cmsr.c8920";//"trker_int2r.c13560";
 		Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "'" + " AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "' AND t.KIND_OF_HM_SET_ID = '" + setType + "'", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const barcodeList = response.data.data;
@@ -336,7 +341,7 @@ class TrackerHMBatchController extends Component {
 
 	onFluteTypeUpdate = (searchText) => {
 		this.updateFlute(searchText);
-		let urlMetadata = this.props.configuration.urlMetadata;
+		let urlMetadata = "trker_cmsr.c8920";//"trker_int2r.c13560";
 		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_FLUTE_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID LIKE  '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const fluteTypes = response.data.data;
@@ -349,7 +354,7 @@ class TrackerHMBatchController extends Component {
 
 	onStructureTypeUpdate = (searchText) => {
 		this.updateStructure(searchText);
-		let urlMetadata = this.props.configuration.urlMetadata;
+		let urlMetadata = "trker_cmsr.c8920";//"trker_int2r.c13560";
 		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_STRUCT_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID LIKE '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const structureTypes = response.data.data;
@@ -362,7 +367,7 @@ class TrackerHMBatchController extends Component {
 
 	onConfigTypeUpdate = (searchText) => {
 		this.updateConfig(searchText);
-		let urlMetadata = this.props.configuration.urlMetadata;
+		let urlMetadata = "trker_cmsr.c8920";//"trker_int2r.c13560";
 		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_CONFIG_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND  t.KIND_OF_HM_CONFIG_ID LIKE '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const configTypes = response.data.data;
@@ -375,7 +380,7 @@ class TrackerHMBatchController extends Component {
 
 	onSetTypeUpdate = (searchText) => {
 		this.updateSet(searchText);
-		let urlMetadata = this.props.configuration.urlMetadata;
+		let urlMetadata = "trker_cmsr.c8920";//"trker_int2r.c13560";
 		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_SET_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "' AND  t.KIND_OF_HM_SET_ID LIKE '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const setTypes = response.data.data;
@@ -389,7 +394,7 @@ class TrackerHMBatchController extends Component {
 
 	//Filter at the level of SQL ... need improvment.. So far only restrict search to the next power of 10
 	getBatchNumbers = (minRange, maxRange) => {
-		let urlMetadata = this.props.configuration.urlMetadata;
+		let urlMetadata = "trker_cmsr.c8920";//"trker_int2r.c13560";
 
 		let rangeSearch = maxRange.toString().slice(0, maxRange.toString().length - (1 + (maxRange - minRange).toString().length));
 		console.log(rangeSearch);
@@ -405,9 +410,9 @@ class TrackerHMBatchController extends Component {
 	}
 
 	getBarcodeAndRun = (batchNumber) => {
-		let urlMetadata = this.props.configuration.urlMetadata;
-		let urlDatasets = this.props.configuration.urlDatasets;
-		let urlRuns = this.props.configuration.urlRuns;
+		let urlMetadata = "trker_cmsr.c8920";//"trker_int2r.c13560";
+		let urlDatasets = "trker_cmsr.datasets";
+		let urlRuns = "trker_cmsr.runs";
 
 		let sqlRun1 = "SELECT m.part_barcode, r.run_number FROM " + urlRuns + " r, " + urlDatasets + " d, " + urlMetadata + " m "
 			+ "where m.part_barcode  LIKE '" + batchNumber + "%"

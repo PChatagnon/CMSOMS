@@ -18,13 +18,27 @@ import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
 import Chip from '@material-ui/core/Chip';
 import FaceIcon from '@material-ui/icons/Face';
-
+//import WebIcon from '@material-ui/icons/Web';
+//import InsertChartIcon from '@material-ui/icons/InsertChart';
+//import FormatQuotetIcon from '@material-ui/icons/FormatQuote';
+import AppBar from '@material-ui/core/AppBar';
+import Tabs from '@material-ui/core/Tabs';
+import Tab from '@material-ui/core/Tab';
 import Slider from '@material-ui/core/Slider';
 import FolderIcon from '@material-ui/icons/Folder';
+import ListSubheader from '@material-ui/core/ListSubheader';
+import List from '@material-ui/core/List';
+import ListItem from '@material-ui/core/ListItem';
+import ListItemIcon from '@material-ui/core/ListItemIcon';
+import ListItemText from '@material-ui/core/ListItemText';
+import Collapse from '@material-ui/core/Collapse';
+import InboxIcon from '@material-ui/icons/MoveToInbox';
+import DraftsIcon from '@material-ui/icons/Drafts';
+import SendIcon from '@material-ui/icons/Send';
+import ExpandLess from '@material-ui/icons/ExpandLess';
+import ExpandMore from '@material-ui/icons/ExpandMore';
+import StarBorder from '@material-ui/icons/StarBorder';
 import CircularProgress from '@material-ui/core/CircularProgress';
-import Input from '@material-ui/core/Input';
-import InputLabel from '@material-ui/core/InputLabel';
-import Select from '@material-ui/core/Select';
 
 
 const styles = {
@@ -79,12 +93,11 @@ const styles = {
 
 const RESTHUB_URL = '/tracker-resthub';
 
-
-
 class TrackerHMBatchController extends Component {
 
 	static controllerHeight = 400;
- 
+
+
 	constructor() {
 		super();
 		this.state = {
@@ -97,15 +110,16 @@ class TrackerHMBatchController extends Component {
 			url: '',
 			loading: false,
 			tab: "simple",
-			kindOfHM: "All",
-			batchLimits: [0, 0],
-			batchRange: [0, 0]
+			batchLimits: [34230, 34451],//[12340, 12348],//
+			batchRange: [34350, 34351]//[12340, 12348]//
 		}
 	}
 
 	static controllerInit(urlQuery, controller) {
 
-		let urlMetadata = controller.configuration.urlMetadata;//"trker_int2r.c13560";
+		let urlMetadata = "trker_int2r.c13560";
+		let urlDatasets = "trker_int2r.datasets";
+		let urlRuns = "trker_int2r.runs";
 		let barcodeType = '',
 			lastBarcodeType = '',
 			id = '';
@@ -120,9 +134,11 @@ class TrackerHMBatchController extends Component {
 		let run = '',
 			runs = [];
 		let runTypeNumber = '';
+		//let runTypeNumbers = [];
 		let filterBy = 'runType';
 		let selectedIds = [];
 		let initData = () => {
+			//this.initBatchRange();
 
 			return {
 				data: {
@@ -149,6 +165,7 @@ class TrackerHMBatchController extends Component {
 				const fluteTypes = respData.length ? respData.map(s => s.kindOfHmFluteId) : null;
 				lastFluteType = fluteTypes ? fluteTypes[0] : null;
 				fluteType = "PQC";//lastFluteType ? lastFluteType : null;
+				//console.log("HERE flute type " + fluteType+ " "+this.setState.fluteTypes[0]);
 				return Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_STRUCT_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + fluteType + "'", null, null, null, RESTHUB_URL)
 					.then(resp => {
 						const respData = resp.data.data;
@@ -178,6 +195,7 @@ class TrackerHMBatchController extends Component {
 	}
 
 	static controllerQueryTitle(state) {
+		//return `HM Barcode:   ${state.tracker_partBarcode}`;
 		return `${state.tracker_fluteType}/${state.tracker_hmStructType}`;
 	}
 
@@ -196,9 +214,9 @@ class TrackerHMBatchController extends Component {
 			this.props.updateState(controllerState);
 		}
 
-		let urlMetadata = this.props.configuration.urlMetadata;// "trker_cmsr.c8920";//"trker_int2r.c13560";
-		let urlDatasets = this.props.configuration.urlDatasets;
-		let urlRuns = this.props.configuration.urlRuns//"trker_cmsr.runs";
+		let urlMetadata = "trker_int2r.c13560";
+		let urlDatasets = "trker_int2r.datasets";
+		let urlRuns = "trker_int2r.runs";
 		return Resthub.json2("SELECT DISTINCT r.run_number, r.name FROM " + urlRuns + " r, " + urlDatasets + " d, " + urlMetadata + " m where m.part_barcode='" + barcodeType + "' and m.kind_of_hm_flute_id = '" + fluteType + "' and m.KIND_OF_HM_STRUCT_ID= '" + structureType + "' AND m.KIND_OF_HM_CONFIG_ID = '" + configType + "' AND m.KIND_OF_HM_SET_ID = '" + setType + "'  and m.condition_data_set_id = d.id and d.run_id=r.id ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const runs = response.data.data;
@@ -214,7 +232,8 @@ class TrackerHMBatchController extends Component {
 		const fluteType = this.validateFluteType(searchText);
 		if (!fluteType) return;
 		this.updateFlute(fluteType);
-		let urlMetadata = this.props.configuration.urlMetadata;// "trker_cmsr.c8920";//"trker_int2r.c13560";
+
+		let urlMetadata = "trker_int2r.c13560";
 		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_STRUCT_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + fluteType + "' ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const structureTypes = response.data.data;
@@ -243,7 +262,7 @@ class TrackerHMBatchController extends Component {
 		if (!structureType) return;
 		this.updateStructure(structureType);
 
-		let urlMetadata = this.props.configuration.urlMetadata;
+		let urlMetadata = "trker_int2r.c13560";
 		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_CONFIG_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + structureType + "'", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const configTypes = response.data.data;
@@ -276,7 +295,7 @@ class TrackerHMBatchController extends Component {
 
 		console.log("yooooo je suis la " + configType);
 
-		let urlMetadata = this.props.configuration.urlMetadata;
+		let urlMetadata = "trker_int2r.c13560";
 		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_SET_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "'" + " AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "'", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const setTypes = response.data.data;
@@ -305,7 +324,7 @@ class TrackerHMBatchController extends Component {
 		if (!setType) return;
 		this.updateSet(setType);
 
-		let urlMetadata = this.props.configuration.urlMetadata;//"trker_cmsr.c8920";//"trker_int2r.c13560";
+		let urlMetadata = "trker_int2r.c13560";
 		Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "'" + " AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "' AND t.KIND_OF_HM_SET_ID = '" + setType + "'", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const barcodeList = response.data.data;
@@ -318,8 +337,8 @@ class TrackerHMBatchController extends Component {
 				console.log(minRange);
 				console.log(maxRange);
 				this.setState({
-					batchLimits: [parseInt(minRange), parseInt(maxRange)],
-					batchRange: [parseInt(minRange), parseInt(maxRange)],
+					batchLimits: [parseInt(minRange), parseInt(maxRange)],// [barcodeRange.,barcodeRange.],
+					batchRange: [parseInt(minRange), parseInt(maxRange)],// [barcodeRange.,barcodeRange.],
 					errMessage: ''
 				});
 			});
@@ -336,7 +355,7 @@ class TrackerHMBatchController extends Component {
 
 	onFluteTypeUpdate = (searchText) => {
 		this.updateFlute(searchText);
-		let urlMetadata = this.props.configuration.urlMetadata;
+		let urlMetadata = "trker_int2r.c13560";
 		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_FLUTE_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID LIKE  '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const fluteTypes = response.data.data;
@@ -349,7 +368,7 @@ class TrackerHMBatchController extends Component {
 
 	onStructureTypeUpdate = (searchText) => {
 		this.updateStructure(searchText);
-		let urlMetadata = this.props.configuration.urlMetadata;
+		let urlMetadata = "trker_int2r.c13560";
 		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_STRUCT_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID LIKE '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const structureTypes = response.data.data;
@@ -362,7 +381,7 @@ class TrackerHMBatchController extends Component {
 
 	onConfigTypeUpdate = (searchText) => {
 		this.updateConfig(searchText);
-		let urlMetadata = this.props.configuration.urlMetadata;
+		let urlMetadata = "trker_int2r.c13560";
 		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_CONFIG_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND  t.KIND_OF_HM_CONFIG_ID LIKE '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const configTypes = response.data.data;
@@ -375,7 +394,7 @@ class TrackerHMBatchController extends Component {
 
 	onSetTypeUpdate = (searchText) => {
 		this.updateSet(searchText);
-		let urlMetadata = this.props.configuration.urlMetadata;
+		let urlMetadata = "trker_int2r.c13560";
 		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_SET_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "' AND  t.KIND_OF_HM_SET_ID LIKE '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const setTypes = response.data.data;
@@ -389,15 +408,18 @@ class TrackerHMBatchController extends Component {
 
 	//Filter at the level of SQL ... need improvment.. So far only restrict search to the next power of 10
 	getBatchNumbers = (minRange, maxRange) => {
-		let urlMetadata = this.props.configuration.urlMetadata;
+		let urlMetadata = "trker_int2r.c13560";
 
 		let rangeSearch = maxRange.toString().slice(0, maxRange.toString().length - (1 + (maxRange - minRange).toString().length));
 		console.log(rangeSearch);
 
-		return Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "' AND t.KIND_OF_HM_SET_ID = '" + this.props.controllerState.tracker_hmSetType +"'  and t.PART_BARCODE like "+" '"+rangeSearch+"%' "+ " ORDER BY t.PART_BARCODE ", null, null, null, RESTHUB_URL)
+		return Resthub.json2("SELECT DISTINCT t.SENSOR FROM  trker_cmsr.tracker_sensor_cv_v  t  where t.SENSOR like " + " '" + rangeSearch + "%' ", null, null, null, RESTHUB_URL)
+			//return Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "' AND t.KIND_OF_HM_SET_ID = '" + this.props.controllerState.tracker_hmSetType   where t.PART_BARCODE like "+" '"+rangeSearch+"%' "+ "' ORDER BY t.PART_BARCODE ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				//This line creates a list of unique batches number
-				let batchNumbersList = [...new Set(response.data.data.map(s => s.partBarcode.split('_')[0]))].filter(s => (s >= minRange && s <= maxRange));
+				console.log("response");
+				console.log(response.data.data);
+				let batchNumbersList = [...new Set(response.data.data.map(s => s.sensor.split('_')[0]))].filter(s => (s >= minRange && s <= maxRange));
 				console.log("batchNumbersList");
 				console.log(batchNumbersList);
 				return batchNumbersList;
@@ -405,34 +427,35 @@ class TrackerHMBatchController extends Component {
 	}
 
 	getBarcodeAndRun = (batchNumber) => {
-		let urlMetadata = this.props.configuration.urlMetadata;
-		let urlDatasets = this.props.configuration.urlDatasets;
-		let urlRuns = this.props.configuration.urlRuns;
+		let urlMetadata = "trker_int2r.c13560";
+		let urlDatasets = "trker_int2r.datasets";
+		let urlRuns = "trker_int2r.runs";
+		//Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "' AND t.KIND_OF_HM_SET_ID = '" + this.props.controllerState.tracker_hmSetType + "' AND  t.PART_BARCODE LIKE '" + batchNumber + "%' ORDER BY t.PART_BARCODE ", null, null, null, RESTHUB_URL)
+		//return Resthub.json2("SELECT DISTINCT t.SENSOR FROM  trker_cmsr.tracker_sensor_cv_v  t  WHERE  t.SENSOR LIKE '" + batchNumber + "%' ORDER BY t.SENSOR ", null, null, null, RESTHUB_URL)
+		let sqlBarcode = "t.PART_BARCODE FROM " + urlMetadata + " t "
+			+ "WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType
+			+ "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType
+			+ "' AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType
+			+ "' AND t.KIND_OF_HM_SET_ID = '" + this.props.controllerState.tracker_hmSetType;
 
+		let batchNumber1 = 12346;
 		let sqlRun1 = "SELECT m.part_barcode, r.run_number FROM " + urlRuns + " r, " + urlDatasets + " d, " + urlMetadata + " m "
-			+ "where m.part_barcode  LIKE '" + batchNumber + "%"
+			+ "where m.part_barcode  LIKE '" + batchNumber1 + "%"
 			+ "' AND m.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType
 			+ "' AND m.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType
 			+ "' AND m.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType
 			+ "' AND m.KIND_OF_HM_SET_ID = '" + this.props.controllerState.tracker_hmSetType
 			+ "'  and m.condition_data_set_id = d.id and d.run_id=r.id ORDER BY m.part_barcode";
 
-		return Resthub.json2(sqlRun1, null, null, null, RESTHUB_URL)
+		return Resthub.json2("SELECT DISTINCT t.SENSOR, t.RUN_TYPE_NUMBER FROM  trker_cmsr.tracker_sensor_cv_v  t  WHERE  t.SENSOR LIKE '" + batchNumber + "%' ORDER BY t.SENSOR ", null, null, null, RESTHUB_URL)
+			//return Resthub.json2(sqlRun1, null, null, null, RESTHUB_URL)
 			.then(response => {
-				console.log("here")
-				console.log(response.data.data)
-				let barcodeList = response.data.data.map(s => s.partBarcode + "_" + String(s.runNumber));
-				let filteredBarcodeList = this.filterKindOfHM(barcodeList);
-				return filteredBarcodeList;
+				//let barcodeList = response.data.data.map(s=>s.partBarcode+"_"+s.runNumber);
+				let barcodeList = response.data.data.map(s => s.sensor + "_" + s.runTypeNumber.replace(/(^.*\(|\).*$)/g, ''));
+				//console.log(barcodeList);
+				return barcodeList;
 			});
 
-	}
-
-	filterKindOfHM = (barcodeList) => {
-		console.log("barcodeList");
-		console.log(barcodeList);
-		let filteredBarcodeList = (this.state.kindOfHM!="All")? barcodeList.filter(item => item.split('_')[2]==this.state.kindOfHM) : barcodeList;
-		return filteredBarcodeList;
 	}
 
 	filterRuns = (barcodeList) => { //Filter the last run available for a given barcode. Might need better writting
@@ -441,16 +464,16 @@ class TrackerHMBatchController extends Component {
 		let currentRun = splitName.pop();
 		let currentBarcode = splitName.join('_');
 		let element = {
-			tracker_partBarcode: currentBarcode,
-			tracker_runTypeNumber: currentRun
+			barcode: currentBarcode,
+			run: currentRun
 		};//barcodeList[0];
 		for (const barcode of barcodeList) {
 			let Name = barcode.split('_');
 			let Run = Name.pop();
 			let Barcode = Name.join('_');
 			let newElement = {
-				tracker_partBarcode: Barcode,
-				tracker_runTypeNumber: Run
+				barcode: Barcode,
+				run: Run
 			};
 			//console.log("current " + currentBarcode + " " + currentRun);
 			//console.log(Barcode + " " + Run);
@@ -484,11 +507,9 @@ class TrackerHMBatchController extends Component {
 						let barcodeList = [];
 						barcodeList = results.map((val, index) => { return val; });
 						return barcodeList.map(s => {
-							if (!controllerState.tracker_data.find(item => item.tracker_id.split(' ')[1] === (s[0].split('_')[0])) && s.length>0) {
-								const batchName = (this.state.kindOfHM == "All") ? "Batch " + s[0].split('_')[0]+ " (" + s[0].split('_')[2] + ")" : "Batch " + s[0].split('_')[0] + " (" + this.state.kindOfHM + ")";
-
+							if (!controllerState.tracker_data.find(item => item.tracker_id === ("Batch " + s[0].split('_')[0]))) {
 								controllerState.tracker_data.push({
-									tracker_id: batchName,
+									tracker_id: "Batch " + s[0].split('_')[0],
 									barcodeRunList: this.filterRuns(s)
 								})
 							}
@@ -554,9 +575,6 @@ class TrackerHMBatchController extends Component {
 		this.setState({ batchRange: newValue });
 	};
 
-	handleTypeChange = (event) => {
-		this.setState({ kindOfHM: event.target.value });
-	};
 
 	render() {
 		const { classes } = this.props;
@@ -613,25 +631,17 @@ class TrackerHMBatchController extends Component {
 							Batch range to be added:
 						</Typography>
 
-
-						<Input
+						<TextField
+							id="filled-name"
+							label="Batch min."
 							value={this.state.batchRange[0]}
-							//margin="dense"
-							label="Adjust max."
+							style={{ maxWidth: 50 }}
 							onChange={this.handleTextMinChange}
-							//style={{ marginLeft: 20, marginTop: -40, maxWidth: 60 }}
-							inputProps={{
-								step: 1,
-								min: this.state.batchLimits[0],
-								max: this.state.batchLimits[1],
-								type: 'number',
-								'aria-labelledby': 'input-slider',
-							}}
 						/>
 
 						<Slider
 							value={this.state.batchRange}
-							style={{ marginLeft: 20, marginTop: 30, marginBottom: -20, maxWidth: 600 }}
+							style={{ marginLeft: 20, marginTop: 40, maxWidth: 600 }}
 							onChange={this.handleSliderChange}
 							valueLabelDisplay="auto"
 							aria-labelledby="range-slider"
@@ -641,42 +651,18 @@ class TrackerHMBatchController extends Component {
 							max={this.state.batchLimits[1]}
 						/>
 
-
-						<Input
+						<TextField
+							id="filled-name"
+							label="Batch max."
 							value={this.state.batchRange[1]}
-							margin="dense"
-							label="Adjust max."
+							style={{ marginLeft: 20, maxWidth: 50 }}
 							onChange={this.handleTextMaxChange}
-							style={{ marginLeft: 20, marginTop: -40, maxWidth: 60 }}
-							inputProps={{
-								step: 1,
-								min: this.state.batchLimits[0],
-								max: this.state.batchLimits[1],
-								type: 'number',
-								'aria-labelledby': 'input-slider',
-							}}
 						/>
-
-						<FormControl style={{ margin: 10, minWidth: 120, marginTop: 2 }} >
-
-							<InputLabel id="select type of batch">Kind of HM</InputLabel>
-							<Select
-								labelId="demo-simple-select-label"
-								id="demo-simple-select"
-								value={this.state.kindOfHM}
-								onChange={this.handleTypeChange}
-							>
-								<MenuItem value={"All"}>All</MenuItem>
-								<MenuItem value={"PSS"}>PSS</MenuItem>
-								<MenuItem value={"PSP"}>PSP</MenuItem>
-								<MenuItem value={"2-S"}>2-S</MenuItem>
-							</Select>
-						</FormControl>
 
 						<Button
 							//disabled={this.props.controllerState.tracker_runName === '' 
 							//&& this.props.controllerState.tracker_runTypeNumber === ''}
-							style={{ marginLeft: 20, marginTop: -10 }}
+							style={{ marginLeft: 20, marginTop: -40 }}
 							variant="contained"
 							className={classes.button}
 							onClick={this.onBatchAdd}>
@@ -688,7 +674,7 @@ class TrackerHMBatchController extends Component {
 
 					<br />
 					<div>
-						<Typography variant="subtitle2" gutterBottom style={{ marginTop: 0 }}>
+						<Typography variant="subtitle2" gutterBottom style={{ marginTop: 10 }}>
 							Selected batches:
 						</Typography>
 						<div style={styles.wrapper}>
