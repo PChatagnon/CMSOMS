@@ -72,10 +72,12 @@ class TrackerTrendChart extends Component {
         if (this.state.mode == '2D') {
             this.props.shouldUpdate(prevProps.query, this.props.query, this.loadData);
             this.props.shouldRefresh(this.props, this.loadData);
+            console.log("in update")
         }
         else {
             this.props.shouldUpdate(prevProps.query, this.props.query, this.loadDataFreq);
             this.props.shouldRefresh(this.props, this.loadDataFreq);
+            console.log("in update 2")
         }
 
         this.shouldResize();
@@ -630,7 +632,7 @@ class TrackerTrendChart extends Component {
         };
         if (this.state.loadMeta && this.columns.length > 0) {
             return this.columns.map((column) => {
-                return <MenuItem value={column.label} > {`${column.label}`} </MenuItem>;
+                return <MenuItem value={column.label} key={column.label}> {`${column.label}`} </MenuItem>;
             });
         }
         else return <MenuItem value={emptycol}> {empty} </MenuItem>;

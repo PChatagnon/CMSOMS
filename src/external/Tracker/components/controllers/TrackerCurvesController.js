@@ -11,7 +11,7 @@ import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
 import Chip from '@material-ui/core/Chip';
-import FaceIcon from '@material-ui/icons/Face';
+import FolderIcon from '@material-ui/icons/Folder';
 //import WebIcon from '@material-ui/icons/Web';
 //import InsertChartIcon from '@material-ui/icons/InsertChart';
 //import FormatQuotetIcon from '@material-ui/icons/FormatQuote';
@@ -291,7 +291,7 @@ class TrackerCurvesController extends Component {
             return (
                 <Chip
                     key={e.tracker_id}
-                    icon={<FaceIcon />}
+                    icon={<FolderIcon />}
                     label={e.tracker_id}
                     onDelete={() => this.onIDDelete(e.tracker_id)}
                     className={this.props.classes.chip}

@@ -78,21 +78,23 @@ class TrackerBatchTrendChart extends Component {
     }
 
     componentDidUpdate(prevProps) {
-        if (this.state.mode == '2D' && !this.AllowDisplay()) {
+        /*if (this.state.mode == '2D' && !this.AllowDisplay()) {
             this.props.shouldUpdate(prevProps.query, this.props.query, this.loadMeta);
             this.props.shouldRefresh(this.props, this.loadMeta);
         }
         else if (!this.AllowDisplay()) {
             this.props.shouldUpdate(prevProps.query, this.props.query, this.loadMeta);
-            this.props.shouldRefresh(this.props, this.loadloadMetaDataFreq);
+            this.props.shouldRefresh(this.props, this.loadMeta);
         }
-        else if (this.state.mode == '2D' && this.AllowDisplay()) {
+        else*/ if (this.state.mode == '2D') {
             this.props.shouldUpdate(prevProps.query, this.props.query, this.loadData);
             this.props.shouldRefresh(this.props, this.loadData);
+
         }
         else if (this.AllowDisplay()) {
             this.props.shouldUpdate(prevProps.query, this.props.query, this.loadDataFreq);
             this.props.shouldRefresh(this.props, this.loadDataFreq);
+
         }
         this.shouldResize();
     }
@@ -100,7 +102,6 @@ class TrackerBatchTrendChart extends Component {
     loadMeta = () => {
         const { configuration } = this.props;
         let sql2 = configuration.url;
-        
         if (this.props.query.tracker_data.length > 0) {
             Object.entries(this.props.query.tracker_data[0].barcodeRunList[0]).forEach(ef => {
                 sql2 = sql2.replace(ef[0], "'" + ef[1] + "'");
@@ -142,7 +143,7 @@ class TrackerBatchTrendChart extends Component {
                         });
                         this.setState({ loadMeta: true })
                     })
-            })//.catch(error => this.props.onFailure(error));
+            }).catch(error => this.props.onFailure(error));
     }
 
     average(array, i) {
@@ -231,6 +232,8 @@ class TrackerBatchTrendChart extends Component {
     loadData = (query = this.props.query) => {
         this.loadMeta().then(
             () => {
+
+                this.props.showLoader();
                 const { configuration } = this.props;
                 this.setState({ loadMeta: true })
                 this.props.showLoader();
@@ -708,7 +711,7 @@ class TrackerBatchTrendChart extends Component {
         };
         if (this.state.loadMeta && this.columns.length > 0) {
             return this.columns.map((column) => {
-                return <MenuItem value={column.label} > {`${column.label}`} </MenuItem>;
+                return <MenuItem value={column.label} key={column.label} > {`${column.label}`} </MenuItem>;
             });
         }
         else return <MenuItem value={emptycol}> {empty} </MenuItem>;
@@ -728,7 +731,7 @@ class TrackerBatchTrendChart extends Component {
         };
         if (this.state.loadMeta && this.columns.length > 0) {
             return this.columns.map((column) => {
-                return <MenuItem value={column.label} > {`${column.label}`} </MenuItem>;
+                return <MenuItem value={column.label} key={column.label} > {`${column.label}`} </MenuItem>;
             });
         }
         else return <MenuItem value={emptycol}> {empty} </MenuItem>;

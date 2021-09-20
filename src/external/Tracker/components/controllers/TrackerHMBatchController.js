@@ -155,21 +155,18 @@ class TrackerHMBatchController extends Component {
 						const structureTypes = respData.length ? respData.map(s => s.kindOfHmStructId) : null;
 						lastStructureType = structureTypes ? structureTypes[0] : null;
 						structureType = "";//lastStructureType ? lastStructureType : null
-						console.log("structure type " + structureType);
 						return Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_CONFIG_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + fluteType + "'AND t.KIND_OF_HM_STRUCT_ID = '" + structureType + "'", null, null, null, RESTHUB_URL)
 							.then(resp => {
 								const respData = resp.data.data;
 								const configTypes = respData.length ? respData.map(s => s.kindOfHmConfigId) : null;
 								lastConfigType = configTypes ? configTypes[0] : null;
 								configType = "";//lastConfigType ? lastConfigType : null
-								console.log("config type " + configType);
 								return Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_SET_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + fluteType + "'AND t.KIND_OF_HM_STRUCT_ID = '" + structureType + "'AND t.KIND_OF_HM_CONFIG_ID = '" + configType + "'", null, null, null, RESTHUB_URL)
 									.then(resp => {
 										const respData = resp.data.data;
 										const setTypes = respData.length ? respData.map(s => s.kindOfHmSetId) : null;
 										lastSetType = setTypes ? setTypes[0] : null;
 										setType = "";//lastSetType ? lastSetType : null
-										console.log("set type " + setType);
 										return initData();
 									})
 							})
@@ -273,9 +270,6 @@ class TrackerHMBatchController extends Component {
 		const configType = this.validateConfigType(searchText);
 		if (!configType) return;
 		this.updateConfig(configType);
-
-		console.log("yooooo je suis la " + configType);
-
 		let urlMetadata = this.props.configuration.urlMetadata;
 		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_SET_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "'" + " AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "'", null, null, null, RESTHUB_URL)
 			.then(response => {
@@ -309,14 +303,8 @@ class TrackerHMBatchController extends Component {
 		Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "'" + " AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "' AND t.KIND_OF_HM_SET_ID = '" + setType + "'", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const barcodeList = response.data.data;
-				console.log("what I want");
-				console.log(barcodeList);
-				console.log("what I want");
 				var minRange = barcodeList[0].partBarcode.split('_')[0];
-				console.log(barcodeList.length);
 				var maxRange = barcodeList[barcodeList.length - 1].partBarcode.split('_')[0];
-				console.log(minRange);
-				console.log(maxRange);
 				this.setState({
 					batchLimits: [parseInt(minRange), parseInt(maxRange)],
 					batchRange: [parseInt(minRange), parseInt(maxRange)],
@@ -392,14 +380,11 @@ class TrackerHMBatchController extends Component {
 		let urlMetadata = this.props.configuration.urlMetadata;
 
 		let rangeSearch = maxRange.toString().slice(0, maxRange.toString().length - (1 + (maxRange - minRange).toString().length));
-		console.log(rangeSearch);
 
 		return Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "' AND t.KIND_OF_HM_SET_ID = '" + this.props.controllerState.tracker_hmSetType +"'  and t.PART_BARCODE like "+" '"+rangeSearch+"%' "+ " ORDER BY t.PART_BARCODE ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				//This line creates a list of unique batches number
 				let batchNumbersList = [...new Set(response.data.data.map(s => s.partBarcode.split('_')[0]))].filter(s => (s >= minRange && s <= maxRange));
-				console.log("batchNumbersList");
-				console.log(batchNumbersList);
 				return batchNumbersList;
 			}).catch(error => this.props.onFailure(error));
 	}
@@ -419,8 +404,6 @@ class TrackerHMBatchController extends Component {
 
 		return Resthub.json2(sqlRun1, null, null, null, RESTHUB_URL)
 			.then(response => {
-				console.log("here")
-				console.log(response.data.data)
 				let barcodeList = response.data.data.map(s => s.partBarcode + "_" + String(s.runNumber));
 				let filteredBarcodeList = this.filterKindOfHM(barcodeList);
 				return filteredBarcodeList;
@@ -429,8 +412,6 @@ class TrackerHMBatchController extends Component {
 	}
 
 	filterKindOfHM = (barcodeList) => {
-		console.log("barcodeList");
-		console.log(barcodeList);
 		let filteredBarcodeList = (this.state.kindOfHM!="All")? barcodeList.filter(item => item.split('_')[2]==this.state.kindOfHM) : barcodeList;
 		return filteredBarcodeList;
 	}
@@ -452,8 +433,6 @@ class TrackerHMBatchController extends Component {
 				tracker_partBarcode: Barcode,
 				tracker_runTypeNumber: Run
 			};
-			//console.log("current " + currentBarcode + " " + currentRun);
-			//console.log(Barcode + " " + Run);
 			if (barcode == barcodeList[barcodeList.length - 1] && Barcode == currentBarcode && Run > currentRun) { filteredList.push(newElement); }
 			else if (barcode == barcodeList[barcodeList.length - 1] && Barcode == currentBarcode && Run < currentRun) { filteredList.push(element); }
 			else if (barcode == barcodeList[barcodeList.length - 1] && Barcode != currentBarcode) { filteredList.push(element); filteredList.push(newElement); }
@@ -461,7 +440,7 @@ class TrackerHMBatchController extends Component {
 			else if (Barcode == currentBarcode && Run < currentRun) { continue; }
 			else if (Barcode != currentBarcode) { filteredList.push(element); currentBarcode = Barcode; currentRun = Run; element = newElement; }
 		}
-		//console.log(filteredList);
+		console.log(filteredList)
 		return filteredList;
 	}
 
@@ -484,7 +463,7 @@ class TrackerHMBatchController extends Component {
 						let barcodeList = [];
 						barcodeList = results.map((val, index) => { return val; });
 						return barcodeList.map(s => {
-							if (!controllerState.tracker_data.find(item => item.tracker_id.split(' ')[1] === (s[0].split('_')[0])) && s.length>0) {
+							if (barcodeList.length>0 && !controllerState.tracker_data.find(item => item.tracker_id.split(' ')[1] === (s[0].split('_')[0])) && s.length>0) {
 								const batchName = (this.state.kindOfHM == "All") ? "Batch " + s[0].split('_')[0]+ " (" + s[0].split('_')[2] + ")" : "Batch " + s[0].split('_')[0] + " (" + this.state.kindOfHM + ")";
 
 								controllerState.tracker_data.push({
@@ -497,7 +476,6 @@ class TrackerHMBatchController extends Component {
 					}).then(() => {
 						this.props.updateState(controllerState);
 						this.setState({ loading: false });
-						console.log(this.props.controllerState);
 					});
 
 
@@ -516,7 +494,7 @@ class TrackerHMBatchController extends Component {
 		return (this.props.controllerState.tracker_data.map(e => {
 			return (
 				<Chip
-					key={e.tracker_id}
+					key={e.tracker_id+"folder"}
 					icon={<FolderIcon />}
 					label={e.tracker_id}
 					onDelete={() => this.onIDDelete(e.tracker_id)}
@@ -541,13 +519,11 @@ class TrackerHMBatchController extends Component {
 	handleTextMinChange = (event) => {
 		const maxRange = this.state.batchRange[1];
 		if (parseInt(event.target.value) <= maxRange && (parseInt(event.target.value)) >= this.state.batchLimits[0]) { this.setState({ batchRange: [parseInt(event.target.value), maxRange] }) };
-		console.log(this.state.batchRange);
 	}
 
 	handleTextMaxChange = (event) => {
 		const minRange = this.state.batchRange[0];
 		if (parseInt(event.target.value) >= minRange && (parseInt(event.target.value)) <= this.state.batchLimits[1]) this.setState({ batchRange: [minRange, parseInt(event.target.value)] });
-		console.log(this.state.batchRange);
 	}
 
 	handleSliderChange = (event, newValue) => {
