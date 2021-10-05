@@ -84,7 +84,7 @@ const RESTHUB_URL = '/tracker-resthub';
 class TrackerHMBatchController extends Component {
 
 	static controllerHeight = 400;
-
+ 
 	constructor() {
 		super();
 		this.state = {
@@ -122,21 +122,18 @@ class TrackerHMBatchController extends Component {
 		let runTypeNumber = '';
 		let filterBy = 'runType';
 		let selectedIds = [];
-		let initialData = [];
 		let initData = () => {
 
 			return {
 				data: {
 					runs: runs
 				},
-				exportData: {
-					tracker_data: initialData
-				},
 				state: {
 					tracker_fluteType: fluteType,
 					tracker_hmStructType: structureType,
 					tracker_hmConfigType: configType,
 					tracker_hmSetType: setType,
+					tracker_data: selectedIds,
 					tracker_id: id,
 					filterBy: filterBy
 				}
@@ -384,7 +381,7 @@ class TrackerHMBatchController extends Component {
 
 		let rangeSearch = maxRange.toString().slice(0, maxRange.toString().length - (1 + (maxRange - minRange).toString().length));
 
-		return Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "' AND t.KIND_OF_HM_SET_ID = '" + this.props.controllerState.tracker_hmSetType + "'  and t.PART_BARCODE like " + " '" + rangeSearch + "%' " + " ORDER BY t.PART_BARCODE ", null, null, null, RESTHUB_URL)
+		return Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "' AND t.KIND_OF_HM_SET_ID = '" + this.props.controllerState.tracker_hmSetType +"'  and t.PART_BARCODE like "+" '"+rangeSearch+"%' "+ " ORDER BY t.PART_BARCODE ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				//This line creates a list of unique batches number
 				let batchNumbersList = [...new Set(response.data.data.map(s => s.partBarcode.split('_')[0]))].filter(s => (s >= minRange && s <= maxRange));
@@ -415,7 +412,7 @@ class TrackerHMBatchController extends Component {
 	}
 
 	filterKindOfHM = (barcodeList) => {
-		let filteredBarcodeList = (this.state.kindOfHM != "All") ? barcodeList.filter(item => item.split('_')[2] == this.state.kindOfHM) : barcodeList;
+		let filteredBarcodeList = (this.state.kindOfHM!="All")? barcodeList.filter(item => item.split('_')[2]==this.state.kindOfHM) : barcodeList;
 		return filteredBarcodeList;
 	}
 
@@ -443,16 +440,15 @@ class TrackerHMBatchController extends Component {
 			else if (Barcode == currentBarcode && Run < currentRun) { continue; }
 			else if (Barcode != currentBarcode) { filteredList.push(element); currentBarcode = Barcode; currentRun = Run; element = newElement; }
 		}
-		//console.log(filteredList)
+		console.log(filteredList)
 		return filteredList;
 	}
 
 	onBatchAdd = () => {
 		let {
-			controllerExportData
+			controllerState
 		} = this.props;
 		this.setState({ loading: true });
-		let tracker_data_list = [];
 		this.getBatchNumbers(this.state.batchRange[0], this.state.batchRange[1])
 			.then((batchNumbersList) => {
 
@@ -467,18 +463,18 @@ class TrackerHMBatchController extends Component {
 						let barcodeList = [];
 						barcodeList = results.map((val, index) => { return val; });
 						return barcodeList.map(s => {
-							if (barcodeList.length > 0 && !controllerExportData.tracker_data.find(item => item.tracker_id.split(' ')[1] === (s[0].split('_')[0])) && s.length > 0) {
-								const batchName = (this.state.kindOfHM == "All") ? "Batch " + s[0].split('_')[0] + " (" + s[0].split('_')[2] + ")" : "Batch " + s[0].split('_')[0] + " (" + this.state.kindOfHM + ")";
-								controllerExportData.tracker_data.push({
+							if (barcodeList.length>0 && !controllerState.tracker_data.find(item => item.tracker_id.split(' ')[1] === (s[0].split('_')[0])) && s.length>0) {
+								const batchName = (this.state.kindOfHM == "All") ? "Batch " + s[0].split('_')[0]+ " (" + s[0].split('_')[2] + ")" : "Batch " + s[0].split('_')[0] + " (" + this.state.kindOfHM + ")";
+
+								controllerState.tracker_data.push({
 									tracker_id: batchName,
 									barcodeRunList: this.filterRuns(s)
 								})
-
 							}
 						}
 						)
 					}).then(() => {
-						this.props.updateControllerData(controllerExportData);
+						this.props.updateState(controllerState);
 						this.setState({ loading: false });
 					});
 
@@ -488,22 +484,17 @@ class TrackerHMBatchController extends Component {
 
 	onIDDelete = (value) => {
 		let {
-			controllerExportData, controllerData
+			controllerState
 		} = this.props;
-		let update_tracker_data = [];
-		update_tracker_data = controllerExportData.tracker_data.filter(item => item.tracker_id !== value);
-		controllerExportData.tracker_data = update_tracker_data;
-		this.props.updateControllerData(controllerData);
+		controllerState.tracker_data = controllerState.tracker_data.filter(item => item.tracker_id !== value);
+		this.props.updateState(controllerState);
 	}
 
 	renderChip = () => {
-		let {
-			controllerExportData
-		} = this.props;
-		return (controllerExportData.tracker_data.map(e => {
+		return (this.props.controllerState.tracker_data.map(e => {
 			return (
 				<Chip
-					key={e.tracker_id + "folder"}
+					key={e.tracker_id+"folder"}
 					icon={<FolderIcon />}
 					label={e.tracker_id}
 					onDelete={() => this.onIDDelete(e.tracker_id)}

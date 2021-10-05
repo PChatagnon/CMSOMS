@@ -101,9 +101,11 @@ class TrackerBatchTrendChart extends Component {
 
     loadMeta = () => {
         const { configuration } = this.props;
+        //console.log("this.props")
+        //console.log(this.props)
         let sql2 = configuration.url;
-        if (this.props.query.tracker_data.length > 0) {
-            Object.entries(this.props.query.tracker_data[0].barcodeRunList[0]).forEach(ef => {
+        if (this.props.controllerExportData.tracker_data.length > 0) {
+            Object.entries(this.props.controllerExportData.tracker_data[0].barcodeRunList[0]).forEach(ef => {
                 sql2 = sql2.replace(ef[0], "'" + ef[1] + "'");
 
             })
@@ -229,7 +231,7 @@ class TrackerBatchTrendChart extends Component {
 
     }
 
-    loadData = (query = this.props.query) => {
+    loadData = (controllerExportData = this.props.controllerExportData) => {
         this.loadMeta().then(
             () => {
 
@@ -247,7 +249,10 @@ class TrackerBatchTrendChart extends Component {
                 var errorY = [];
 
                 const promises = [];
-                query.tracker_data.map((c) => {
+                //console.log(" here at controllerExportData")
+                //console.log(this.props.controllerExportData)
+                //console.log(controllerExportData)
+                this.props.controllerExportData.tracker_data.map((c) => {
                     promises.push(this.getBatch(c))
                 })
 
@@ -327,7 +332,7 @@ class TrackerBatchTrendChart extends Component {
     }
 
 
-    loadDataFreq = (query = this.props.query) => {
+    loadDataFreq = (controllerExportData = this.props.controllerExportData) => {
 
         this.loadMeta().then(
             () => {
@@ -340,7 +345,7 @@ class TrackerBatchTrendChart extends Component {
                 this.createFreqplot();
 
                 const promises = [];
-                query.tracker_data.map((c) => {
+                controllerExportData.tracker_data.map((c) => {
                     promises.push(this.getBatch(c))
                 })
                 let seria = [];

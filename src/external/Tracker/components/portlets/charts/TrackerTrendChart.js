@@ -72,12 +72,12 @@ class TrackerTrendChart extends Component {
         if (this.state.mode == '2D') {
             this.props.shouldUpdate(prevProps.query, this.props.query, this.loadData);
             this.props.shouldRefresh(this.props, this.loadData);
-            console.log("in update")
+            //console.log("in update")
         }
         else {
             this.props.shouldUpdate(prevProps.query, this.props.query, this.loadDataFreq);
             this.props.shouldRefresh(this.props, this.loadDataFreq);
-            console.log("in update 2")
+            //console.log("in update 2")
         }
 
         this.shouldResize();
@@ -94,14 +94,14 @@ class TrackerTrendChart extends Component {
                 sql = sql.replace(e[0], "'" + e[1] + "'");
             }
         });
-        console.log("HERERERERERE " + sql);
+
 
         return Resthub.query("SELECT * FROM ( " + sql + " ) meta  ", this.resthubUrl)
             .then(response => {
                 return Resthub.meta(response.data, this.resthubUrl)
                     .then(response => {
-                        console.log("here in meta response");
-                        console.log(response);
+                        //console.log("here in meta response");
+                        //console.log(response);
                         this.columns = response.data.columns.map(column => {
                             return {
                                 title: column.name,
@@ -141,8 +141,8 @@ class TrackerTrendChart extends Component {
                 if (this.AllowDisplay()) sql3 = "SELECT data." + this.state.labelX.label + " " + ", data." + this.state.labelY.label + " " + " FROM ( " + this.sql + " ) data  ORDER BY data." + this.state.labelX.label + " ASC";
 
                 this.create2Dplot(configuration)
-                console.log("query.tracker_data");
-                console.log(query.tracker_data);
+                //console.log("query.tracker_data");
+                //console.log(query.tracker_data);
                 if (query.tracker_data.length > 0) {
                     query.tracker_data.forEach(e => {
                         let sql2 = sql3;
@@ -155,7 +155,7 @@ class TrackerTrendChart extends Component {
                             }
                         })
 
-                        console.log("sql2: " + sql2);
+                        //console.log("sql2: " + sql2);
                         const { xAxisObjectName, superImpose } = configuration;
                         Resthub.json2(sql2, null, null, null, configuration.resthubUrl)
                             .then(resp => {
@@ -194,14 +194,14 @@ class TrackerTrendChart extends Component {
                             sql2 = sql2.replace(e[0], "'" + e[1] + "'");
                         }
                     })
-                    console.log("sql2 prime: " + sql2);
+                    //console.log("sql2 prime: " + sql2);
                     Resthub.json2(sql2, null, null, null, configuration.resthubUrl)
                         .then(resp => {
                             const data = resp.data.data;
                             let series = [];
-                            console.log("configuration: ");
-                            console.log(configuration);
-                            console.log(query);
+                            //console.log("configuration: ");
+                            //console.log(configuration);
+                            //console.log(query);
                             Object.entries(configuration.series).forEach(e => {
                                 let seria = {};
                                 //seria['useHTML'] = true;
@@ -226,7 +226,7 @@ class TrackerTrendChart extends Component {
                                 this.chart.addSeries(s, false)
                             })
 
-                            console.log(series);
+                            //console.log(series);
 
                             this.chart.setTitle({ text: this.state.labelY.name + " VS " + this.state.labelX.name }); //query[configuration.paramForTitle]
 
@@ -417,7 +417,7 @@ class TrackerTrendChart extends Component {
     createFreqplot = () => {
 
         var binOption = (this.state.nbBins > 0) ? parseInt(this.state.nbBins) : 'square-root';
-        console.log('nbbins ' + binOption)
+        //console.log('nbbins ' + binOption)
 
         const options = {
             chart: {
@@ -451,7 +451,7 @@ class TrackerTrendChart extends Component {
                 binsNumber: binOption
             }]
         };
-        console.log(options);
+        //console.log(options);
         this.chart = new Highcharts.chart(this.id, options);
     }
 
@@ -598,8 +598,8 @@ class TrackerTrendChart extends Component {
     handleLogScale = (event, isChecked) => {
         const type = isChecked ? 'logarithmic' : 'linear';
         this.chart.yAxis[0].update({ type: type });
-        console.log(this.state);
-        console.log(this.AllowDisplay());
+        //console.log(this.state);
+        //console.log(this.AllowDisplay());
     }
 
     handleModeFrequency = (event, isChecked) => {
@@ -641,7 +641,7 @@ class TrackerTrendChart extends Component {
 
     render() {
         const { mode } = this.state;
-        console.log("mode ");
+        //console.log("mode ");
         return (
             <div>
                 <div id={this.id} />
