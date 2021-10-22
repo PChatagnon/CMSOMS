@@ -44,6 +44,8 @@ class TrackerBatchTrendChart extends Component {
         this.state = {
             mode: '2D',
             labelX: {
+
+                
                 title: '',
                 name: '',
                 label: '',
@@ -51,6 +53,15 @@ class TrackerBatchTrendChart extends Component {
                 description: null,
                 units: null,
                 sortable: true,
+                /*
+                title: "Batch nb",
+                name: "Batch nb",
+                label: "BATCH nb",
+                type: "Batch nb".toLowerCase(),
+                description: null,
+                units: null,
+                sortable: true,
+                */
             },
             labelY: {
                 title: '',
@@ -101,8 +112,6 @@ class TrackerBatchTrendChart extends Component {
 
     loadMeta = () => {
         const { configuration } = this.props;
-        //console.log("this.props")
-        //console.log(this.props)
         let sql2 = configuration.url;
         if (this.props.controllerExportData.tracker_data.length > 0) {
             Object.entries(this.props.controllerExportData.tracker_data[0].barcodeRunList[0]).forEach(ef => {
@@ -117,35 +126,36 @@ class TrackerBatchTrendChart extends Component {
 
         }
 
-        return Resthub.query("SELECT * FROM ( " + sql2 + " ) meta  ", this.resthubUrl)
+        return Resthub.json2(sql2, null, null, null, configuration.resthubUrl)
             .then(response => {
-                return Resthub.meta(response.data, this.resthubUrl)
-                    .then(response => {
-               
-                        this.columns = response.data.columns.map(column => {
-                            return {
-                                title: column.name,
-                                name: column.jname,
-                                label: column.name,
-                                type: column.type.toLowerCase(),
-                                description: null,
-                                units: null,
-                                sortable: true,
-                            }
-                        });
+                const data = response.data.data;
+                this.columns = Object.keys(response.data.data[0]).map(column => {
+                    return {
+                        title: column,
+                        name: column,
+                        label: column,
+                        type: column.toLowerCase(),
+                        description: null,
+                        units: null,
+                        sortable: true,
+                    }
+                });
 
-                        this.columns.unshift({
-                            title: "Batch nb",
-                            name: "Batch nb",
-                            label: "BATCH nb",
-                            type: "Batch nb".toLowerCase(),
-                            description: null,
-                            units: null,
-                            sortable: true,
-                        });
-                        this.setState({ loadMeta: true })
-                    })
-            }).catch(error => this.props.onFailure(error));
+                this.columns.unshift({
+                    title: "Batch nb",
+                    name: "Batch nb",
+                    label: "BATCH nb",
+                    type: "Batch nb".toLowerCase(),
+                    description: null,
+                    units: null,
+                    sortable: true,
+                });
+                this.setState({ loadMeta: true })
+                console.log(this.columns)
+                this.setState({ labelX: this.columns[0] });
+                this.setState({ labelY: this.columns[1] });
+
+            }).catch(error => this.props.onEmpty(error));
     }
 
     average(array, i) {
@@ -207,7 +217,7 @@ class TrackerBatchTrendChart extends Component {
         let sqlf = this.sql.substring(this.sql.indexOf('where'), this.sql.length);
         batch.barcodeRunList.map((element, i) => { sqli = this.createSQL(element, sqli, sqlf, i) });
 
-        return Resthub.json2(sqli, null, null, null, configuration.resthubUrl) 
+        return Resthub.json2(sqli, null, null, null, configuration.resthubUrl)
             .then(resp => {
                 const data = resp.data.data;
                 data.forEach(d => {
@@ -249,9 +259,6 @@ class TrackerBatchTrendChart extends Component {
                 var errorY = [];
 
                 const promises = [];
-                //console.log(" here at controllerExportData")
-                //console.log(this.props.controllerExportData)
-                //console.log(controllerExportData)
                 this.props.controllerExportData.tracker_data.map((c) => {
                     promises.push(this.getBatch(c))
                 })
@@ -259,16 +266,23 @@ class TrackerBatchTrendChart extends Component {
                 Promise.all(promises)
                     .then(results => {
                         let batchdataList = [];
-                       
+
                         batchdataList = results.map((val, index) => { return val; });
                         return batchdataList.map((s, index) => {
                             let seria = {};
                             let sigma_seria = {};
                             let sigmaX_seria = {};
 
-                            var color = (this.state.labelX.name == "Batch nb" || this.state.labelY.name == "Batch nb") ? Highcharts.getOptions().colors[0] : Highcharts.getOptions().colors[index % 10];
+                            var color = 0;
+                            if (this.state.labelX.name == "Batch nb" || this.state.labelY.name == "Batch nb"){
+                                if(s.ID.split(" ")[2]=="(2-S)")color = Highcharts.getOptions().colors[0]
+                                if(s.ID.split(" ")[2]=="(PSP)")color = Highcharts.getOptions().colors[1]
+                                if(s.ID.split(" ")[2]=="(PSS)")color = Highcharts.getOptions().colors[2]
+                            }
+                            else Highcharts.getOptions().colors[index % 10];
 
-                           
+                            console.log(s.ID)
+
                             seria['marker'] = {
                                 radius: 7,
                                 symbol: 'circle'
@@ -352,7 +366,7 @@ class TrackerBatchTrendChart extends Component {
                 Promise.all(promises)
                     .then(results => {
                         let batchdataList = [];
-                      
+
                         batchdataList = results.map((val, index) => { return val; });
 
                         return batchdataList.map(s => {

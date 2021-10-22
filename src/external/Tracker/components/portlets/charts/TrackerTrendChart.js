@@ -96,7 +96,25 @@ class TrackerTrendChart extends Component {
         });
 
 
-        return Resthub.query("SELECT * FROM ( " + sql + " ) meta  ", this.resthubUrl)
+        return Resthub.json2(sql, null, null, null, configuration.resthubUrl)
+        .then(response => {
+            const data = response.data.data;
+            this.columns = Object.keys(response.data.data[0]).map(column => {
+                return {
+                    title: column,
+                    name: column,
+                    label: column,
+                    type: column.toLowerCase(),
+                    description: null,
+                    units: null,
+                    sortable: true,
+                }
+            });
+            this.setState({ labelX: this.columns[0] });
+            this.setState({ labelY: this.columns[1] });
+        }).catch(error => this.props.onFailure(error));
+
+        /*return Resthub.query("SELECT * FROM ( " + sql + " ) meta  ", this.resthubUrl)
             .then(response => {
                 return Resthub.meta(response.data, this.resthubUrl)
                     .then(response => {
@@ -114,7 +132,7 @@ class TrackerTrendChart extends Component {
                             }
                         });
                     })
-            }).catch(error => this.props.onFailure(error));
+            }).catch(error => this.props.onFailure(error));*/
     }
 
     loadData = (query = this.props.query) => {

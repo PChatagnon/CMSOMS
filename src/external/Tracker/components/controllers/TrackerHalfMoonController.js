@@ -161,43 +161,43 @@ class TrackerHalfMoonController extends Component {
 				const respData = resp.data.data;
 				const fluteTypes = respData.length ? respData.map(s => s.kindOfHmFluteId) : null;
 				lastFluteType = fluteTypes ? fluteTypes[0] : null;
-				fluteType = "PQC";//lastFluteType ? lastFluteType : null;
+				fluteType = lastFluteType ? lastFluteType : null;
 				//console.log("HERE flute type " + fluteType+ " "+this.setState.fluteTypes[0]);
 				return Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_STRUCT_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + fluteType + "'", null, null, null, RESTHUB_URL)
 					.then(resp => {
 						const respData = resp.data.data;
 						const structureTypes = respData.length ? respData.map(s => s.kindOfHmStructId) : null;
 						lastStructureType = structureTypes ? structureTypes[0] : null;
-						structureType = "";//lastStructureType ? lastStructureType : null
+						structureType = lastStructureType ? lastStructureType : null
 						//console.log("structure type " + structureType);
 						return Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_CONFIG_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + fluteType + "'AND t.KIND_OF_HM_STRUCT_ID = '" + structureType + "'", null, null, null, RESTHUB_URL)
 							.then(resp => {
 								const respData = resp.data.data;
 								const configTypes = respData.length ? respData.map(s => s.kindOfHmConfigId) : null;
 								lastConfigType = configTypes ? configTypes[0] : null;
-								configType = "";//lastConfigType ? lastConfigType : null
+								configType = lastConfigType ? lastConfigType : null
 								//console.log("config type " + configType);
 								return Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_SET_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + fluteType + "'AND t.KIND_OF_HM_STRUCT_ID = '" + structureType + "'AND t.KIND_OF_HM_CONFIG_ID = '" + configType + "'", null, null, null, RESTHUB_URL)
 									.then(resp => {
 										const respData = resp.data.data;
 										const setTypes = respData.length ? respData.map(s => s.kindOfHmSetId) : null;
 										lastSetType = setTypes ? setTypes[0] : null;
-										setType = "";//lastSetType ? lastSetType : null
+										setType = lastSetType ? lastSetType : null
 										//console.log("set type " + setType);
 										return Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + structureType + "' AND t.KIND_OF_HM_CONFIG_ID = '" + configType + "' AND t.KIND_OF_HM_SET_ID = '" + setType + "' ORDER BY t.PART_BARCODE ", null, 1, 1, RESTHUB_URL)
 											.then(resp => {
 												const respData = resp.data.data;
 												const barcodeTypes = respData.length ? respData.map(s => s.partBarcode) : null;
 												lastBarcodeType = barcodeTypes ? barcodeTypes[0] : null;
-												barcodeType = "";//lastBarcodeType ? lastBarcodeType : null;
+												barcodeType = lastBarcodeType ? lastBarcodeType : null;
 												//console.log("barcode  " + barcodeType);
-												return Resthub.json2("SELECT DISTINCT r.run_number, r.name FROM " + urlRuns + " r, " + urlDatasets + " d, " + urlMetadata + " m where m.part_barcode='" + barcodeType + "' and m.kind_of_hm_flute_id = '" + fluteType + "' and m.KIND_OF_HM_STRUCT_ID= '" + structureType + "' AND t.KIND_OF_HM_CONFIG_ID = '" + configType + "' AND t.KIND_OF_HM_SET_ID = '" + setType + "'  and m.condition_data_set_id = d.id and d.run_id=r.id ", null, null, null, RESTHUB_URL)
+												return Resthub.json2("SELECT DISTINCT r.run_number, r.name FROM " + urlRuns + " r, " + urlDatasets + " d, " + urlMetadata + " m where m.part_barcode='" + barcodeType + "' and m.kind_of_hm_flute_id = '" + fluteType + "' and m.KIND_OF_HM_STRUCT_ID= '" + structureType + "' AND m.KIND_OF_HM_CONFIG_ID = '" + configType + "' AND m.KIND_OF_HM_SET_ID = '" + setType + "'  and m.condition_data_set_id = d.id and d.run_id=r.id ", null, null, null, RESTHUB_URL)
 													.then(resp => {
 														runs = resp.data.data;
 
 														if (runs[0].runNumber) {
 															const last_runTypeNumber = runs ? runs[0].runNumber : null;
-															runTypeNumber = "";//last_runTypeNumber ? last_runTypeNumber : 'None';
+															runTypeNumber = last_runTypeNumber ? last_runTypeNumber : 'None';
 															//console.log("run type " + runTypeNumber);
 														}
 														return initData();
@@ -344,6 +344,10 @@ class TrackerHalfMoonController extends Component {
 			controllerState
 		} = this.props;
 		controllerState.tracker_fluteType = fluteType;
+		controllerState.tracker_hmStructType = "";
+		controllerState.tracker_hmConfigType = "";
+		controllerState.tracker_hmSetType = "";
+		controllerState.tracker_partBarcode = "";
 		this.props.updateState(controllerState);
 	}
 
@@ -382,6 +386,9 @@ class TrackerHalfMoonController extends Component {
 			controllerState
 		} = this.props;
 		controllerState.tracker_hmStructType = structureType;
+		controllerState.tracker_hmConfigType = "";
+		controllerState.tracker_hmSetType = "";
+		controllerState.tracker_partBarcode = "";
 		this.props.updateState(controllerState);
 	}
 
@@ -422,6 +429,8 @@ class TrackerHalfMoonController extends Component {
 			controllerState
 		} = this.props;
 		controllerState.tracker_hmConfigType = configType;
+		controllerState.tracker_hmSetType = "";
+		controllerState.tracker_partBarcode = "";
 		this.props.updateState(controllerState);
 	}
 
@@ -460,6 +469,7 @@ class TrackerHalfMoonController extends Component {
 			controllerState
 		} = this.props;
 		controllerState.tracker_hmSetType = setType;
+		controllerState.tracker_partBarcode = "";
 		this.props.updateState(controllerState);
 	}
 
@@ -468,7 +478,8 @@ class TrackerHalfMoonController extends Component {
 	onBarcodeTypeUpdate = (searchText) => {
 		this.updateBarcode(searchText);
 		let urlMetadata = "trker_cmsr.c8920";
-		Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + " AND t.KIND_OF_HM_SET_ID = '" + this.props.controllerState.tracker_hmSetType + "' AND t.PART_BARCODE LIKE  '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
+		let Upper_searchText = searchText.toUpperCase() 
+		Resthub.json2("SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + " AND t.KIND_OF_HM_SET_ID = '" + this.props.controllerState.tracker_hmSetType + "' AND t.PART_BARCODE LIKE  '%" + Upper_searchText + "%' ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const barcodeTypes = response.data.data;
 				this.setState({
@@ -481,7 +492,8 @@ class TrackerHalfMoonController extends Component {
 	onFluteTypeUpdate = (searchText) => {
 		this.updateFlute(searchText);
 		let urlMetadata = "trker_cmsr.c8920";
-		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_FLUTE_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID LIKE  '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
+		let Upper_searchText = searchText.toUpperCase() 
+		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_FLUTE_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID LIKE  '%" + Upper_searchText + "%' ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const fluteTypes = response.data.data;
 				this.setState({
@@ -494,7 +506,8 @@ class TrackerHalfMoonController extends Component {
 	onStructureTypeUpdate = (searchText) => {
 		this.updateStructure(searchText);
 		let urlMetadata = "trker_cmsr.c8920";
-		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_STRUCT_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID LIKE '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
+		let Upper_searchText = searchText.toUpperCase() 
+		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_STRUCT_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID LIKE '%" + Upper_searchText + "%' ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const structureTypes = response.data.data;
 				this.setState({
@@ -506,8 +519,9 @@ class TrackerHalfMoonController extends Component {
 
 	onConfigTypeUpdate = (searchText) => {
 		this.updateConfig(searchText);
+		let Upper_searchText = searchText.toUpperCase() 
 		let urlMetadata = "trker_cmsr.c8920";
-		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_CONFIG_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND  t.KIND_OF_HM_CONFIG_ID LIKE '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
+		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_CONFIG_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND  t.KIND_OF_HM_CONFIG_ID LIKE '%" + Upper_searchText + "%' ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const configTypes = response.data.data;
 				this.setState({
@@ -519,8 +533,9 @@ class TrackerHalfMoonController extends Component {
 
 	onSetTypeUpdate = (searchText) => {
 		this.updateSet(searchText);
+		let Upper_searchText = searchText.toUpperCase() 
 		let urlMetadata = "trker_cmsr.c8920";
-		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_SET_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "' AND  t.KIND_OF_HM_SET_ID LIKE '%" + searchText + "%' ", null, null, null, RESTHUB_URL)
+		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_SET_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "' AND  t.KIND_OF_HM_SET_ID LIKE '%" + Upper_searchText + "%' ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const setTypes = response.data.data;
 				this.setState({
