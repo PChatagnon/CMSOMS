@@ -18,11 +18,6 @@ import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
 import Chip from '@material-ui/core/Chip';
 import FaceIcon from '@material-ui/icons/Face';
-import DialogTitle from '@material-ui/core/DialogTitle';
-import Dialog from '@material-ui/core/Dialog';
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
-import ListItemText from '@material-ui/core/ListItemText';
 
 import Slider from '@material-ui/core/Slider';
 import FolderIcon from '@material-ui/icons/Folder';
@@ -104,9 +99,7 @@ class TrackerHMBatchController extends Component {
 			tab: "simple",
 			kindOfHM: "All",
 			batchLimits: [0, 0],
-			batchRange: [0, 0],
-			selectedBatch: "",
-			DialogOpen: false
+			batchRange: [0, 0]
 		}
 	}
 
@@ -153,7 +146,7 @@ class TrackerHMBatchController extends Component {
 		let {
 			url
 		} = controller.configuration;
-
+		
 		return Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_FLUTE_ID FROM " + urlMetadata + " t ", null, null, null, RESTHUB_URL)
 			.then(resp => {
 				const respData = resp.data.data;
@@ -289,12 +282,12 @@ class TrackerHMBatchController extends Component {
 		if (!configType) return;
 		this.updateConfig(configType);
 		let urlMetadata = this.props.configuration.urlMetadata;
-
-		let sql = "SELECT DISTINCT t.KIND_OF_HM_SET_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "'"
-		if (this.props.controllerState.tracker_hmConfigType == "All") { sql = "SELECT DISTINCT t.KIND_OF_HM_SET_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "'" }
+		
+		let sql = "SELECT DISTINCT t.KIND_OF_HM_SET_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType+ "'"
+		if(this.props.controllerState.tracker_hmConfigType=="All"){sql = "SELECT DISTINCT t.KIND_OF_HM_SET_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType+ "'" }
 		Resthub.json2(sql, null, null, null, RESTHUB_URL)
 
-			//Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_SET_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "'" + " AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "'", null, null, null, RESTHUB_URL)
+		//Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_SET_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "'" + " AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "'", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const setTypes = response.data.data.map(s => s.kindOfHmSetId);
 				setTypes.push("All")
@@ -325,10 +318,10 @@ class TrackerHMBatchController extends Component {
 		this.updateSet(setType);
 
 		let urlMetadata = this.props.configuration.urlMetadata;//"trker_cmsr.c8920";//"trker_int2r.c13560";
-		let sql = "SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "'"
-		if (setType != "All") { sql = sql + " AND t.KIND_OF_HM_SET_ID = '" + setType + "'" }
-		if (this.props.controllerState.tracker_hmConfigType != "All") { sql = sql + " AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "'" }
-
+		let sql = "SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "'" 
+		if(setType!="All"){sql=sql+ " AND t.KIND_OF_HM_SET_ID = '" + setType + "'"}
+		if(this.props.controllerState.tracker_hmConfigType != "All"){sql=sql+ " AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType+ "'"}
+		
 		console.log("sql")
 
 		console.log(sql)
@@ -358,7 +351,7 @@ class TrackerHMBatchController extends Component {
 	onFluteTypeUpdate = (searchText) => {
 		this.updateFlute(searchText);
 		let urlMetadata = this.props.configuration.urlMetadata;
-		let Upper_searchText = searchText.toUpperCase()
+		let Upper_searchText = searchText.toUpperCase() 
 		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_FLUTE_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID LIKE  '%" + Upper_searchText + "%' ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const fluteTypes = response.data.data;
@@ -372,7 +365,7 @@ class TrackerHMBatchController extends Component {
 	onStructureTypeUpdate = (searchText) => {
 		this.updateStructure(searchText);
 		let urlMetadata = this.props.configuration.urlMetadata;
-		let Upper_searchText = searchText.toUpperCase()
+		let Upper_searchText = searchText.toUpperCase() 
 		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_STRUCT_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID LIKE '%" + Upper_searchText + "%' ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const structureTypes = response.data.data;
@@ -386,7 +379,7 @@ class TrackerHMBatchController extends Component {
 	onConfigTypeUpdate = (searchText) => {
 		this.updateConfig(searchText);
 		let urlMetadata = this.props.configuration.urlMetadata;
-		let Upper_searchText = searchText.toUpperCase()
+		let Upper_searchText = searchText.toUpperCase() 
 		Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_CONFIG_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND  t.KIND_OF_HM_CONFIG_ID LIKE '%" + Upper_searchText + "%' ", null, null, null, RESTHUB_URL)
 			.then(response => {
 				const configTypes = response.data.data.map(s => s.kindOfHmConfigId);
@@ -402,9 +395,9 @@ class TrackerHMBatchController extends Component {
 		//Set is not a string in the DB, it need to be handle with care here
 		this.updateSet(searchText);
 		let urlMetadata = this.props.configuration.urlMetadata;
-		let Upper_searchText = (searchText[0] == "L" || searchText[0] == "R") ? searchText[0].toUpperCase() + searchText.substring(1).toLowerCase() : searchText.toLowerCase()
+		let Upper_searchText = (searchText[0]=="L" || searchText[0]=="R") ? searchText[0].toUpperCase()+searchText.substring(1).toLowerCase() : searchText.toLowerCase()
 		let sql = "SELECT DISTINCT t.KIND_OF_HM_SET_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "' AND  t.KIND_OF_HM_SET_ID LIKE '%" + Upper_searchText + "%' "
-		if (this.props.controllerState.tracker_hmConfigType == "All") { sql = "SELECT DISTINCT t.KIND_OF_HM_SET_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND  t.KIND_OF_HM_SET_ID LIKE '%" + Upper_searchText + "%' " }
+		if(this.props.controllerState.tracker_hmConfigType=="All"){sql = "SELECT DISTINCT t.KIND_OF_HM_SET_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "' AND  t.KIND_OF_HM_SET_ID LIKE '%" + Upper_searchText + "%' "}
 		Resthub.json2(sql, null, null, null, RESTHUB_URL)
 			.then(response => {
 				const setTypes = response.data.data.map(s => s.kindOfHmSetId);
@@ -423,10 +416,10 @@ class TrackerHMBatchController extends Component {
 
 		let rangeSearch = maxRange.toString().slice(0, maxRange.toString().length - (1 + (maxRange - minRange).toString().length));
 
-		let sql = "SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType
+		let sql = "SELECT DISTINCT t.PART_BARCODE FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType 
 		sql = sql + "' AND t.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType
-		if (this.props.controllerState.tracker_hmConfigType != "All") sql = sql + "' AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType
-		if (this.props.controllerState.tracker_hmSetType != "All") sql = sql + "' AND t.KIND_OF_HM_SET_ID = '" + this.props.controllerState.tracker_hmSetType
+		if(this.props.controllerState.tracker_hmConfigType != "All")sql = sql + "' AND t.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType 
+		if(this.props.controllerState.tracker_hmSetType != "All")sql = sql + "' AND t.KIND_OF_HM_SET_ID = '" + this.props.controllerState.tracker_hmSetType 
 		sql = sql + "' and t.PART_BARCODE LIKE" + " '" + rangeSearch + "%' " + "ORDER BY t.PART_BARCODE "
 
 		console.log("sql in get batch number")
@@ -447,10 +440,10 @@ class TrackerHMBatchController extends Component {
 		let sqlRun = "SELECT m.part_barcode,m.kind_of_hm_set_id, m.kind_of_hm_config_id, r.run_number FROM " + urlRuns + " r, " + urlDatasets + " d, " + urlMetadata + " m "
 			+ "where m.part_barcode  LIKE '" + batchNumber + "%"
 			+ "' AND m.KIND_OF_HM_FLUTE_ID = '" + this.props.controllerState.tracker_fluteType
-			+ "' AND m.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType + "'";
-
-		if (this.props.controllerState.tracker_hmConfigType != "All") { sqlRun = sqlRun + " AND m.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType + "'" }
-		if (this.props.controllerState.tracker_hmSetType != "All") { sqlRun = sqlRun + " AND m.KIND_OF_HM_SET_ID = '" + this.props.controllerState.tracker_hmSetType + "'" }
+			+ "' AND m.KIND_OF_HM_STRUCT_ID = '" + this.props.controllerState.tracker_hmStructType+"'";
+			
+		if(this.props.controllerState.tracker_hmConfigType != "All"){sqlRun = sqlRun + " AND m.KIND_OF_HM_CONFIG_ID = '" + this.props.controllerState.tracker_hmConfigType+"'"}
+		if(this.props.controllerState.tracker_hmSetType != "All"){sqlRun = sqlRun + " AND m.KIND_OF_HM_SET_ID = '" + this.props.controllerState.tracker_hmSetType+"'"}
 
 		sqlRun = sqlRun + "  and m.condition_data_set_id = d.id and d.run_id=r.id ORDER BY m.part_barcode";
 
@@ -461,10 +454,10 @@ class TrackerHMBatchController extends Component {
 				let barcodeList1 = [];
 				for (var item in response.data.data) {
 					barcodeList1.push({
-						barcode: response.data.data[item].partBarcode,
+						barcode:response.data.data[item].partBarcode,
 						runNumber: response.data.data[item].runNumber,
 						Config: response.data.data[item].kindOfHmConfigId,
-						Set: response.data.data[item].kindOfHmSetId
+						Set:response.data.data[item].kindOfHmSetId
 					})
 				}
 				let filteredBarcodeList = this.filterKindOfHM(barcodeList1);
@@ -487,27 +480,27 @@ class TrackerHMBatchController extends Component {
 		let filteredList = [];
 
 		for (var item in barcodeList) {
-			var index_l = filteredList.findIndex((item_f) => (item_f.barcode == barcodeList[item].barcode && item_f.Config == barcodeList[item].Config && item_f.Set == barcodeList[item].Set && item_f.runNumber < barcodeList[item].runNumber))
-			var index_h = filteredList.findIndex((item_f) => (item_f.barcode == barcodeList[item].barcode && item_f.Config == barcodeList[item].Config && item_f.Set == barcodeList[item].Set && item_f.runNumber > barcodeList[item].runNumber))
-			if (index_l > -1) {
-				filteredList.splice(index_l, 1);
+			var index_l = filteredList.findIndex((item_f) => (item_f.barcode==barcodeList[item].barcode && item_f.Config==barcodeList[item].Config && item_f.Set==barcodeList[item].Set && item_f.runNumber<barcodeList[item].runNumber))
+			var index_h = filteredList.findIndex((item_f) => (item_f.barcode==barcodeList[item].barcode && item_f.Config==barcodeList[item].Config && item_f.Set==barcodeList[item].Set && item_f.runNumber>barcodeList[item].runNumber))
+			if(index_l>-1){
+				filteredList.splice(index_l,1);
 				filteredList.push({
-					barcode: barcodeList[item].barcode,
+					barcode:barcodeList[item].barcode,
 					runNumber: barcodeList[item].runNumber,
 					Config: barcodeList[item].Config,
-					Set: barcodeList[item].Set
+					Set:barcodeList[item].Set
 				})
 			}
-			else if (index_h == -1) {
+			else if (index_h==-1) {
 				// Add only if new or of run number is higher than current filter
 				filteredList.push({
-					barcode: barcodeList[item].barcode,
+					barcode:barcodeList[item].barcode,
 					runNumber: barcodeList[item].runNumber,
 					Config: barcodeList[item].Config,
-					Set: barcodeList[item].Set
+					Set:barcodeList[item].Set
 				})
 			}
-
+			
 		}
 		return filteredList;
 	}
@@ -529,7 +522,7 @@ class TrackerHMBatchController extends Component {
 				Promise.all(promises)
 					.then(results => {
 						let barcodeList = [];
-						barcodeList = results.filter(item => item.length > 0);
+						barcodeList = results.filter(item => item.length>0);
 						console.log("barcodeList")
 						console.log(barcodeList)
 						return barcodeList.map(s => {
@@ -563,34 +556,18 @@ class TrackerHMBatchController extends Component {
 		this.props.updateControllerData(controllerData);
 	}
 
-	handleClickChip = (value) => {
-		this.setState({ selectedBatch: value })
-	}
-
-	onInspectBatch = (value) => {
-		if(this.state.selectedBatch!="")this.setState({ DialogOpen: true })
-	}
-
-	onCloseInspectBatch = (value) => {
-		this.setState({ DialogOpen: false })
-	}
-
 	renderChip = () => {
 		let {
 			controllerExportData
 		} = this.props;
 		return (controllerExportData.tracker_data.map(e => {
-			var colormode = "default"
-			if (this.state.selectedBatch == e.tracker_id) { colormode = "primary" }
 			return (
 				<Chip
-					color={colormode}
 					key={e.tracker_id + "folder"}
 					icon={<FolderIcon />}
 					label={e.tracker_id}
 					onDelete={() => this.onIDDelete(e.tracker_id)}
 					className={this.props.classes.chip}
-					onClick={() => this.handleClickChip(e.tracker_id)}
 				/>
 			);
 		})
@@ -643,7 +620,6 @@ class TrackerHMBatchController extends Component {
 						listStyle={{ maxHeight: 300, overflow: 'auto' }}
 					/>
 					<AutoComplete
-						isOpen={true}
 						label='Structure'
 						value={this.props.controllerState.tracker_hmStructType}
 						suggestions={this.state.structureTypes}
@@ -653,7 +629,6 @@ class TrackerHMBatchController extends Component {
 						maxSearchResults={300}
 						openOnFocus={true}
 						listStyle={{ maxHeight: 300, overflow: 'auto' }}
-						maxItems={30}
 					/>
 					<AutoComplete
 						label='Config'
@@ -756,7 +731,6 @@ class TrackerHMBatchController extends Component {
 					</div>
 
 
-
 					<br />
 					<div>
 						<Typography variant="subtitle2" gutterBottom style={{ marginTop: 0 }}>
@@ -765,25 +739,6 @@ class TrackerHMBatchController extends Component {
 						<div style={styles.wrapper}>
 							{this.renderChip()}
 						</div>
-						<Button
-							//disabled={this.props.controllerState.tracker_runName === '' 
-							//&& this.props.controllerState.tracker_runTypeNumber === ''}
-							style={{ marginLeft: 10, marginTop: 10, marginBottom: 10 }}
-							variant="contained"
-							className={classes.button}
-							onClick={this.onInspectBatch}>
-							Inspect Batch
-						</Button>
-						<Dialog onClose={this.onCloseInspectBatch} open={this.state.DialogOpen}>
-							<DialogTitle>Components of {this.state.selectedBatch} :</DialogTitle>
-							<List sx={{ pt: 0 }}>
-							{this.props.controllerExportData.tracker_data.filter((batch) => batch.tracker_id==this.state.selectedBatch).map((batch) => batch.barcodeRunList.map(item =>
-								<ListItem key={item.runNumber}>
-									<ListItemText primary={"Barcode: "+item.barcode+", Run: "+item.runNumber+", Config: "+item.Config+", Set: "+item.Set} />
-								</ListItem>
-							))}
-							</List>
-						</Dialog>
 					</div>
 				</div>
 			</div >

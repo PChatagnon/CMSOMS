@@ -679,6 +679,7 @@ class TrackerHalfMoonController extends Component {
 							maxSearchResults={300}
 							openOnFocus={true}
 							listStyle={{ maxHeight: 300, overflow: 'auto' }}
+							maxItems={30}
 						/>
 						<AutoComplete
 							label='Config'
