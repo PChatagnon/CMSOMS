@@ -5,7 +5,7 @@ const RESTHUB_URL = '/resthub';
 class Resthub {
 
     static query = (query, rhUrl = RESTHUB_URL) => {
-        return axios.post('http://localhost:9091/query', query, {
+        return axios.post(rhUrl + '/query', query, {
             headers: { 'Content-Type': 'text/plain' },
             responseType: 'text',
             transformResponse: data => data.toString()
@@ -13,7 +13,7 @@ class Resthub {
     }
 
     static meta = (qid, rhUrl = RESTHUB_URL) => {
-        return axios.get('http://localhost:9091/query/' + qid);
+        return axios.get(rhUrl + '/query/' + qid);
     }
 
     static data = (qid, params = null, mime = 'text/csv', pagesize = null, page = null, rhUrl = RESTHUB_URL) => {
@@ -22,7 +22,7 @@ class Resthub {
             headers: { 'Accept': mime }
         }
 
-        let url = 'http://localhost:9091/query/' + qid;
+        let url = rhUrl + '/query/' + qid;
 
         if (pagesize && page) {
             url += '/page/' + pagesize + '/' + page;
@@ -39,12 +39,12 @@ class Resthub {
 
     // Clear cache of the query
     static clear = (qid, rhUrl = RESTHUB_URL) => {
-        return axios.delete('http://localhost:9091/query/' + qid + '/cache');
+        return axios.delete(rhUrl + '/query/' + qid + '/cache');
     }
 
     // Get count of the query
     static count = (qid, params, rhUrl = RESTHUB_URL) => {
-        let url = 'http://localhost:9091/query/' + qid + '/count';
+        let url = rhUrl + '/query/' + qid + '/count';
 
         if (params) {
             url += '?' + Object.keys(params).reduce(function (a, k) { a.push(k + '=' + encodeURIComponent(params[k])); return a }, []).join('&');
@@ -55,7 +55,7 @@ class Resthub {
 
     // Delete query
     static delete = (qid, rhUrl = RESTHUB_URL) => {
-        return axios.delete('http://localhost:9091/query/' + qid);
+        return axios.delete(rhUrl + '/query/' + qid);
     }
 
     static json_fast = (qid, params = null, pagesize = null, page = null, rhUrl = RESTHUB_URL) => {

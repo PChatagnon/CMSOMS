@@ -99,6 +99,8 @@ class TrackerTrendChart extends Component {
         return Resthub.json2(sql, null, null, null, configuration.resthubUrl)
         .then(response => {
             const data = response.data.data;
+            console.log("columns")
+            console.log(data)
             this.columns = Object.keys(response.data.data[0]).map(column => {
                 return {
                     title: column,
@@ -110,8 +112,9 @@ class TrackerTrendChart extends Component {
                     sortable: true,
                 }
             });
-            this.setState({ labelX: this.columns[0] });
-            this.setState({ labelY: this.columns[1] });
+            if (!this.state.loadMeta) this.setState({ labelX: this.columns[0] });
+            if (!this.state.loadMeta) this.setState({ labelY: this.columns[1] });
+            this.setState({ loadMeta: true })
         }).catch(error => this.props.onFailure(error));
 
         /*return Resthub.query("SELECT * FROM ( " + sql + " ) meta  ", this.resthubUrl)
@@ -140,7 +143,7 @@ class TrackerTrendChart extends Component {
         this.loadMeta().then(
             () => {
 
-                this.setState({ loadMeta: true })
+                //this.setState({ loadMeta: true })
                 this.props.showLoader();
 
                 this.colorCount = 0;
@@ -266,7 +269,7 @@ class TrackerTrendChart extends Component {
         this.loadMeta().then(
             () => {
 
-                this.setState({ loadMeta: true })
+                //this.setState({ loadMeta: true })
                 this.props.showLoader();
 
                 this.colorCount = 0;
@@ -488,6 +491,9 @@ class TrackerTrendChart extends Component {
                 series: {
                     pointStart: 0,
                     lineWidth: 0
+                },
+                scatter:{
+                    lineWidth:2
                 }
             },
             credits: {

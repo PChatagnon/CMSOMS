@@ -45,7 +45,7 @@ class TrackerBatchTrendChart extends Component {
             mode: '2D',
             labelX: {
 
-                
+
                 title: '',
                 name: '',
                 label: '',
@@ -111,16 +111,20 @@ class TrackerBatchTrendChart extends Component {
     }
 
     loadMeta = () => {
-        
+
         const { configuration } = this.props;
         let sql2 = configuration.url;
+        //let Condition_ID = configuration.Condition_ID
         if (this.props.controllerExportData.tracker_data.length > 0) {
+
+            //var index_l = filteredList.findIndex((item) => (item.Condition_ID == barcodeList[item].barcode))
+
             sql2 = sql2.replace("tracker_hmStructType", "'" + this.props.query.tracker_hmStructType + "'")
             sql2 = sql2.replace("tracker_fluteType", "'" + this.props.query.tracker_fluteType + "'")
             sql2 = sql2.replace("tracker_hmSetType", "'" + this.props.controllerExportData.tracker_data[0].barcodeRunList[0].Set + "'")
             sql2 = sql2.replace("tracker_hmConfigType", "'" + this.props.controllerExportData.tracker_data[0].barcodeRunList[0].Config + "'")
             sql2 = sql2.replace("tracker_partBarcode", "'" + this.props.controllerExportData.tracker_data[0].barcodeRunList[0].barcode + "'")
-            sql2 = sql2.replace("tracker_runTypeNumber", "'" + this.props.controllerExportData.tracker_data[0].barcodeRunList[0].runNumber + "'")
+            sql2 = sql2.replace("and r.run_number=tracker_runTypeNumber", "")//"'" + this.props.controllerExportData.tracker_data[0].barcodeRunList[0].runNumber + "'")
         }
 
         console.log("in meta")
@@ -149,8 +153,8 @@ class TrackerBatchTrendChart extends Component {
                     units: null,
                     sortable: true,
                 });
-                if(!this.state.loadMeta)this.setState({ labelX: this.columns[0] });
-                if(!this.state.loadMeta)this.setState({ labelY: this.columns[1] });
+                if (!this.state.loadMeta) this.setState({ labelX: this.columns[0] });
+                if (!this.state.loadMeta) this.setState({ labelY: this.columns[1] });
                 this.setState({ loadMeta: true })
                 console.log(this.columns)
 
@@ -196,7 +200,7 @@ class TrackerBatchTrendChart extends Component {
 
         sqli = sqli.replace("tracker_hmStructType", "'" + this.props.query.tracker_hmStructType + "'")
         sqli = sqli.replace("tracker_fluteType", "'" + this.props.query.tracker_fluteType + "'")
-        
+
         return sqli;
     }
 
@@ -263,23 +267,26 @@ class TrackerBatchTrendChart extends Component {
 
                 Promise.all(promises)
                     .then(results => {
-                        let batchdataList = [];
+                        let batchdataList1 = [];
 
-                        batchdataList = results.map((val, index) => { return val; });
+                        batchdataList1 = results.map((val, index) => { return val; });
+                        //This is used to clean potential empty batches when both CV and IV parameters are extracted from a single structure
+                        var batchdataList = batchdataList1.filter(x => x !== undefined);
+                        
                         return batchdataList.map((s, index) => {
+
+
                             let seria = {};
                             let sigma_seria = {};
                             let sigmaX_seria = {};
 
                             var color = 0;
-                            if (this.state.labelX.name == "Batch nb" || this.state.labelY.name == "Batch nb"){
-                                if(s.ID.split(" ")[2]=="(2-S)")color = Highcharts.getOptions().colors[0]
-                                if(s.ID.split(" ")[2]=="(PSP)")color = Highcharts.getOptions().colors[1]
-                                if(s.ID.split(" ")[2]=="(PSS)")color = Highcharts.getOptions().colors[2]
-                            }
-                            else color = Highcharts.getOptions().colors[index % 10];
-
-                            console.log(s.ID)
+                            //if (this.state.labelX.name == "Batch nb" || this.state.labelY.name == "Batch nb"){
+                            if (s.ID.split(" ")[2] == "(2-S)"){color = Highcharts.getOptions().colors[0]}
+                            if (s.ID.split(" ")[2] == "(PSP)"){color = Highcharts.getOptions().colors[1]}
+                            if (s.ID.split(" ")[2] == "(PSS)"){color = Highcharts.getOptions().colors[2]}
+                            //}
+                            //else color = Highcharts.getOptions().colors[index % 10];
 
                             seria['marker'] = {
                                 radius: 7,
@@ -303,11 +310,11 @@ class TrackerBatchTrendChart extends Component {
                             sigma_seria['marker'] = { radius: 0 }
                             sigma_seria['lineWidth'] = 2;
                             sigma_seria['data'] = [[s.data[0][0], s.data[0][1] - s.sigma[1]], [s.data[0][0], s.data[0][1] + s.sigma[1]]];//[[s.data[0]-s.sigma[0], s.data[0]+s.sigma[0]]];
-                            sigma_seria['tooltip'] = {
+                            /*sigma_seria['tooltip'] = {
                                 pointFormatter: function () {
                                     return `<span style='color: ${this.series.color}'>\u25CF</span> <b>" X "${this.x}</b> <b>" Y "${this.y}</b><br />`;
                                 }
-                            };
+                            };*/
                             sigma_seria['color'] = color;
 
                             errorY.push(sigma_seria);
@@ -319,11 +326,11 @@ class TrackerBatchTrendChart extends Component {
                             sigmaX_seria['lineWidth'] = 2;
                             sigmaX_seria['data'] = [[s.data[0][0] - s.sigma[0], s.data[0][1]], [s.data[0][0] + s.sigma[0], s.data[0][1]]];
                             sigmaX_seria['color'] = color;
-                            sigmaX_seria['tooltip'] = {
+                            /*sigmaX_seria['tooltip'] = {
                                 pointFormatter: function () {
                                     return `<span style='color: ${this.series.color}'>\u25CF</span> <b>" X "${this.x}</b> <b>" Y "${this.y}</b><br />`;
                                 }
-                            };
+                            };*/
                             errorX.push(sigmaX_seria);
 
                             this.chart.addSeries(seria, false);
@@ -363,9 +370,10 @@ class TrackerBatchTrendChart extends Component {
                 let seria = [];
                 Promise.all(promises)
                     .then(results => {
-                        let batchdataList = [];
+                        let batchdataList1 = [];
 
-                        batchdataList = results.map((val, index) => { return val; });
+                        batchdataList1 = results.map((val, index) => { return val; });
+                        var batchdataList = batchdataList1.filter(x => x !== undefined);
 
                         return batchdataList.map(s => {
                             seria.push(s.data[0][0]);
