@@ -92,6 +92,9 @@ class ResthubTable extends Component {
                         this.params.rowSize = rowSizeCookie ? parseInt(rowSizeCookie, 10) : this.params.rowSize;
                         this.showResetBtn = rowSizeCookie ? true : false;
 
+
+
+                        /*
                         // Load columns from cookie
                         const cookieColumns = cookie.load(this.columnsCookieName) || null;
                         if (cookieColumns) {
@@ -100,17 +103,18 @@ class ResthubTable extends Component {
                             this.showResetBtn = true;
                             return;
                         }
+                        */
 
-                        // Load columns from portlet config 
+                        // Filter columns from portlet config 
                         const { columns } = configuration;
                         if (columns && columns.length) {
-                            //console.log("In config");
-                            //console.log(columns);
                             const filteredColumns = columns.map(column => { if (tableColumns.find(c => c.name === column.name)) return column; });
                             console.log(filteredColumns);
                             this.columns.columns = filteredColumns;
                             return;
                         }
+
+
                         // Load all columns
                         this.columns.columns = [...tableColumns];
                     })
@@ -136,7 +140,7 @@ class ResthubTable extends Component {
                 const respData = resp.data.data;
                 counts = respData.length ? respData.map(s => s.countcolumn) : null;
                 count = counts ? counts[0] : null;
-
+                console.log("column count "+count)
                 return (!c.isHidden || count > 0);
 
             }
@@ -178,15 +182,17 @@ class ResthubTable extends Component {
             return [...promiseResult, res];
         };
 
-        const promiseExample = (c, sqlParams) =>
+        const promise = (c, sqlParams) =>
             new Promise((res) => {
                 res(this.checkColumn(c, sqlParams));
             });
 
-        const funcs = columns.map(c => async () => await promiseExample(c, sqlParams));
+        const funcs = columns.map(c => async () => await promise(c, sqlParams));
 
         return serializePromise(funcs).then(res => {
             const filteredColumns = [];
+            console.log("res")
+            console.log(res)
             res.map((val, index) => { if (val) return filteredColumns.push(columns[index]); else return; });
             this.columns.columns = filteredColumns;
             return;

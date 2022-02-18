@@ -133,7 +133,7 @@ class TrackerHalfMoonController extends Component {
 					tracker_hmStructType: structureType,
 					tracker_hmConfigType: configType,
 					tracker_hmSetType: setType,
-					tracker_runTypeNumber: runTypeNumber,
+					tracker_hmRunNumber: runTypeNumber,
 					tracker_data: selectedIds,
 					tracker_id: id,
 					filterBy: filterBy
@@ -156,6 +156,7 @@ class TrackerHalfMoonController extends Component {
 		let {
 			url
 		} = controller.configuration;
+
 		return Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_FLUTE_ID FROM " + urlMetadata + " t ", null, null, null, RESTHUB_URL)
 			.then(resp => {
 				const respData = resp.data.data;
@@ -190,16 +191,16 @@ class TrackerHalfMoonController extends Component {
 												const barcodeTypes = respData.length ? respData.map(s => s.partBarcode) : null;
 												lastBarcodeType = barcodeTypes ? barcodeTypes[0] : null;
 												barcodeType = lastBarcodeType ? lastBarcodeType : null;
-												//console.log("barcode  " + barcodeType);
+												console.log("barcode  " + barcodeType);
 												return Resthub.json2("SELECT DISTINCT r.run_number, r.name FROM " + urlRuns + " r, " + urlDatasets + " d, " + urlMetadata + " m where m.part_barcode='" + barcodeType + "' and m.kind_of_hm_flute_id = '" + fluteType + "' and m.KIND_OF_HM_STRUCT_ID= '" + structureType + "' AND m.KIND_OF_HM_CONFIG_ID = '" + configType + "' AND m.KIND_OF_HM_SET_ID = '" + setType + "'  and m.condition_data_set_id = d.id and d.run_id=r.id ", null, null, null, RESTHUB_URL)
 													.then(resp => {
 														runs = resp.data.data.reverse();
 
-														if (runs[0].runNumber) {
+														//if (runs[0].runNumber) {
 															const last_runTypeNumber = runs ? runs[0].runNumber : null;
 															runTypeNumber = last_runTypeNumber ? last_runTypeNumber : 'None';
-															//console.log("run type " + runTypeNumber);
-														}
+															console.log("run type " + runTypeNumber);
+														//}
 														return initData();
 													})
 											})
@@ -224,7 +225,7 @@ class TrackerHalfMoonController extends Component {
 			controllerState
 		} = this.props;
 		if (runs[0].runNumber) {
-			controllerState.tracker_runTypeNumber = runs ? runs[0].runNumber : null;
+			controllerState.tracker_hmRunNumber = runs ? runs[0].runNumber : null;
 		}
 		this.props.updateState(controllerState);
 	}
@@ -239,7 +240,7 @@ class TrackerHalfMoonController extends Component {
 		let {
 			controllerState
 		} = this.props;
-		controllerState.tracker_runTypeNumber = null;
+		controllerState.tracker_hmRunNumber = null;
 		this.props.updateState(controllerState);
 	}
 
@@ -254,7 +255,7 @@ class TrackerHalfMoonController extends Component {
 			let {
 				controllerState
 			} = this.props;
-			controllerState.tracker_runTypeNumber = [];
+			controllerState.tracker_hmRunNumber = [];
 			this.props.updateState(controllerState);
 		}
 
@@ -550,9 +551,9 @@ class TrackerHalfMoonController extends Component {
 			controllerState
 		} = this.props;
 		if (event.target.value != null) {
-			controllerState.tracker_runTypeNumber = event.target.value;
+			controllerState.tracker_hmRunNumber = event.target.value;
 		} else {
-			controllerState.tracker_runTypeNumber = '';
+			controllerState.tracker_hmRunNumber = '';
 		}
 		
 		this.props.updateState(controllerState);
@@ -594,17 +595,17 @@ class TrackerHalfMoonController extends Component {
 		let {
 			controllerState
 		} = this.props;
-		if (controllerState.tracker_runTypeNumber) {
-			if (controllerState.tracker_data.find(item => item.tracker_runTypeNumber === controllerState.tracker_runTypeNumber) && controllerState.tracker_data.find(item => item.tracker_partBarcode === controllerState.tracker_partBarcode) && controllerState.tracker_data.find(item => item.tracker_fluteType === controllerState.tracker_fluteType) && controllerState.tracker_data.find(item => item.tracker_hmStructType === controllerState.tracker_hmStructType) && controllerState.tracker_data.find(item => item.tracker_hmConfigType === controllerState.tracker_hmConfigType) && controllerState.tracker_data.find(item => item.tracker_hmSetType === controllerState.tracker_hmSetType)) {
+		if (controllerState.tracker_hmRunNumber) {
+			if (controllerState.tracker_data.find(item => item.tracker_hmRunNumber === controllerState.tracker_hmRunNumber) && controllerState.tracker_data.find(item => item.tracker_partBarcode === controllerState.tracker_partBarcode) && controllerState.tracker_data.find(item => item.tracker_fluteType === controllerState.tracker_fluteType) && controllerState.tracker_data.find(item => item.tracker_hmStructType === controllerState.tracker_hmStructType) && controllerState.tracker_data.find(item => item.tracker_hmConfigType === controllerState.tracker_hmConfigType) && controllerState.tracker_data.find(item => item.tracker_hmSetType === controllerState.tracker_hmSetType)) {
 				window.alert("This configuration is already included");
 				return;
 			} else {
 				let title = controllerState.tracker_partBarcode + "-" + controllerState.tracker_fluteType + "-" + controllerState.tracker_hmStructType
 				if (controllerState.tracker_hmConfigType != "Not Used") { title += "-" + controllerState.tracker_hmConfigType; }
 				if (controllerState.tracker_hmSetType != "Not Used") { title += "-" + controllerState.tracker_hmSetType; }
-				title += "-" + controllerState.tracker_runTypeNumber;
+				title += "-" + controllerState.tracker_hmRunNumber;
 				controllerState.tracker_data.push({
-					tracker_runTypeNumber: controllerState.tracker_runTypeNumber,
+					tracker_hmRunNumber: controllerState.tracker_hmRunNumber,
 					tracker_partBarcode: controllerState.tracker_partBarcode,
 					tracker_fluteType: controllerState.tracker_fluteType,
 					tracker_hmStructType: controllerState.tracker_hmStructType,
@@ -723,7 +724,7 @@ class TrackerHalfMoonController extends Component {
 								label="Run Number"
 								className={classes.selectField}
 								InputProps={{ className: classes.textField }}
-								value={this.props.controllerState.tracker_runTypeNumber}
+								value={this.props.controllerState.tracker_hmRunNumber}
 								onChange={this.onRunTypeNumberChange}
 								suggestions={this.state.runs}
 								SelectProps={{
@@ -800,7 +801,7 @@ class TrackerHalfMoonController extends Component {
 								label="Run Number"
 								className={classes.selectField}
 								InputProps={{ className: classes.textField }}
-								value={this.props.controllerState.tracker_runTypeNumber}
+								value={this.props.controllerState.tracker_hmRunNumber}
 								onChange={this.onRunTypeNumberChange}
 								suggestions={this.state.runs}
 								SelectProps={{
@@ -814,7 +815,7 @@ class TrackerHalfMoonController extends Component {
 						</div>
 						<Button
 							//disabled={this.props.controllerState.tracker_runName === '' 
-							//&& this.props.controllerState.tracker_runTypeNumber === ''}
+							//&& this.props.controllerState.tracker_hmRunNumber === ''}
 							variant="contained"
 							className={classes.button}
 							onClick={this.onIDAdd}>

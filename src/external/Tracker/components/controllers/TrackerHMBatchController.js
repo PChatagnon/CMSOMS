@@ -59,7 +59,8 @@ const styles = {
 		width: 200
 	},
 	autocomplete: {
-		marginTop: 10
+		marginTop: 10,
+		forcePopupIcon: 'auto'
 	},
 	itemMenu: {
 		width: 200,

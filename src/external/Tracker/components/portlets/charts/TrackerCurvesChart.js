@@ -47,6 +47,8 @@ class TrackerCurvesChart extends Component {
 
         const { configuration } = this.props;
         this.sql = configuration.url;
+        console.log("query tracker data");
+        console.log(this.props.query)
        if(query.tracker_data.length > 0){
            query.tracker_data.forEach(e =>{
                let sql2 = this.sql

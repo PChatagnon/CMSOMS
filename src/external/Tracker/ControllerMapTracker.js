@@ -2,13 +2,16 @@ import TrackerCurvesController from './components/controllers/TrackerCurvesContr
 import TrackerDoubleChoiceController from './components/controllers/TrackerDoubleChoiceController';
 import TrackerHalfMoonController from './components/controllers/TrackerHalfMoonController';
 import TrackerHMBatchController from './components/controllers/TrackerHMBatchController';
+import TrackerHybridController from './components/controllers/TrackerHybridController';
+
 
 export const getTrackerControllers = () => {
     const controllers = {
         TrackerCurvesController: TrackerCurvesController,
         TrackerDoubleChoiceController: TrackerDoubleChoiceController,
         TrackerHalfMoonController: TrackerHalfMoonController,
-        TrackerHMBatchController: TrackerHMBatchController
+        TrackerHMBatchController: TrackerHMBatchController,
+        TrackerHybridController: TrackerHybridController
     };
     return controllers;
 }

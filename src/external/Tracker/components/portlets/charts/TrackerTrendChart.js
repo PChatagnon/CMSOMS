@@ -86,6 +86,7 @@ class TrackerTrendChart extends Component {
     loadMeta = () => {
         const { configuration } = this.props;
         let sql = configuration.url;
+        let additional_columns = configuration.additionalColumns;
         Object.entries(this.props.query).forEach(e => {
             if (e[1] === '') {
                 e[1] = null;
@@ -97,45 +98,51 @@ class TrackerTrendChart extends Component {
 
 
         return Resthub.json2(sql, null, null, null, configuration.resthubUrl)
-        .then(response => {
-            const data = response.data.data;
-            console.log("columns")
-            console.log(data)
-            this.columns = Object.keys(response.data.data[0]).map(column => {
-                return {
-                    title: column,
-                    name: column,
-                    label: column,
-                    type: column.toLowerCase(),
-                    description: null,
-                    units: null,
-                    sortable: true,
-                }
-            });
-            if (!this.state.loadMeta) this.setState({ labelX: this.columns[0] });
-            if (!this.state.loadMeta) this.setState({ labelY: this.columns[1] });
-            this.setState({ loadMeta: true })
-        }).catch(error => this.props.onFailure(error));
-
-        /*return Resthub.query("SELECT * FROM ( " + sql + " ) meta  ", this.resthubUrl)
             .then(response => {
-                return Resthub.meta(response.data, this.resthubUrl)
-                    .then(response => {
-                        //console.log("here in meta response");
-                        //console.log(response);
-                        this.columns = response.data.columns.map(column => {
-                            return {
-                                title: column.name,
-                                name: column.jname,
-                                label: column.name,
-                                type: column.type.toLowerCase(),
-                                description: null,
-                                units: null,
-                                sortable: true,
-                            }
+                const data = response.data.data;
+
+                console.log("here1")
+                console.log(response.data.data[0])
+
+                this.columns = Object.keys(response.data.data[0]).map(column => {
+                    return {
+                        title: column,
+                        name: column,
+                        label: column,
+                        type: "default",//column.toLowerCase(),
+                        description: null,
+                        units: null,
+                        sortable: true,
+                    }
+                });
+
+                console.log(this.columns)
+                console.log(additional_columns)
+                //Add configuration columns (allow to do simple operations on columns)
+
+                if (additional_columns) {
+                    Object.entries(additional_columns).forEach(element => {
+                        console.log("in additional_columns")
+                        this.columns.push({
+                            title: element[1].title,
+                            name: element[1].label,
+                            label: element[1].label,
+                            type: "additional",
+                            description: null,
+                            units: null,
+                            sortable: true
                         });
-                    })
-            }).catch(error => this.props.onFailure(error));*/
+                        console.log(element[1])
+                        console.log("end")
+                    });
+                }
+                console.log("this.columns")
+                console.log(this.columns)
+
+                if (!this.state.loadMeta) this.setState({ labelX: this.columns[0] });
+                if (!this.state.loadMeta) this.setState({ labelY: this.columns[1] });
+                this.setState({ loadMeta: true })
+            }).catch(error => this.props.onFailure(error));
     }
 
     loadData = (query = this.props.query) => {
@@ -143,7 +150,6 @@ class TrackerTrendChart extends Component {
         this.loadMeta().then(
             () => {
 
-                //this.setState({ loadMeta: true })
                 this.props.showLoader();
 
                 this.colorCount = 0;
@@ -159,8 +165,14 @@ class TrackerTrendChart extends Component {
                 this.sql = configuration.url;
 
                 let sql3 = this.sql;
-                if (this.AllowDisplay()) sql3 = "SELECT data." + this.state.labelX.label + " " + ", data." + this.state.labelY.label + " " + " FROM ( " + this.sql + " ) data  ORDER BY data." + this.state.labelX.label + " ASC";
+                if (this.AllowDisplay()) {
+                    console.log("here")
+                    if (this.state.labelX.type != "additional" && this.state.labelY.type != "additional") sql3 = "SELECT data." + this.state.labelX.label + ", data." + this.state.labelY.label + " FROM ( " + this.sql + " ) data  ORDER BY data." + this.state.labelX.label + " ASC";
+                    if (this.state.labelX.type == "additional" && this.state.labelY.type != "additional") sql3 = "SELECT " + this.state.labelX.title + " as " + this.state.labelX.label + ", data." + this.state.labelY.label + " FROM ( " + this.sql + " ) data" + "  ORDER BY data." + this.state.labelY.label + " ASC";
+                    if (this.state.labelX.type != "additional" && this.state.labelY.type == "additional") sql3 = "SELECT data." + this.state.labelX.label + ", " + this.state.labelY.title + " as " + this.state.labelY.label + " FROM ( " + this.sql + " ) data" + "  ORDER BY data." + this.state.labelX.label + " ASC";
+                    if (this.state.labelX.type == "additional" && this.state.labelY.type == "additional") sql3 = "SELECT " + this.state.labelX.title + " as " + this.state.labelX.label + ", " + this.state.labelY.title + " as " + this.state.labelY.label + " FROM ( " + this.sql + " ) data";//  ORDER BY data." + this.state.labelX.label + " ASC";
 
+                }
                 this.create2Dplot(configuration)
                 //console.log("query.tracker_data");
                 //console.log(query.tracker_data);
@@ -187,7 +199,7 @@ class TrackerTrendChart extends Component {
                                 seria['name'] = e['tracker_id'];
                                 seria['data'] = [];
                                 data.forEach(d => {
-                                    seria['data'].push([d[this.state.labelX.name], d[this.state.labelY.name]])//[d[xAxisObjectName], d[superImpose]])
+                                    seria['data'].push([d[this.state.labelX.label.toLowerCase()], d[this.state.labelY.label.toLowerCase()]])//[d[xAxisObjectName], d[superImpose]])
                                 });
                                 seria['tooltip'] = {
                                     pointFormatter: function () {
@@ -197,7 +209,7 @@ class TrackerTrendChart extends Component {
                                 seria['color'] = Highcharts.getOptions().colors[this.colorCount]
                                 this.colorCount = this.colorCount + 1;
                                 this.chart.addSeries(seria);
-                                this.chart.setTitle({ text: this.state.labelY.name + " VS " + this.state.labelX.name });
+                                this.chart.setTitle({ text: this.state.labelY.label + " VS " + this.state.labelX.label });
                                 this.chart.redraw();
                                 if (!data.length)
                                     return this.props.onEmpty();
@@ -220,6 +232,7 @@ class TrackerTrendChart extends Component {
                         .then(resp => {
                             const data = resp.data.data;
                             let series = [];
+                            console.log(data)
                             //console.log("configuration: ");
                             //console.log(configuration);
                             //console.log(query);
@@ -238,18 +251,22 @@ class TrackerTrendChart extends Component {
                                 seria['color'] = Highcharts.getOptions().colors[this.colorCount]
                                 series.push(seria);
                             });
+                            console.log("ICI")
+                            console.log(this.state.labelY.label)
                             data.forEach(d => {
                                 series.forEach(s => {
-                                    s.data.push([d[this.state.labelX.name], d[this.state.labelY.name]])
+                                    s.data.push([d[this.state.labelX.label.toLowerCase()], d[this.state.labelY.label.toLowerCase()]])
                                 })
                             });
+
+                            console.log(series)
                             series.forEach(s => {
                                 this.chart.addSeries(s, false)
                             })
 
                             //console.log(series);
 
-                            this.chart.setTitle({ text: this.state.labelY.name + " VS " + this.state.labelX.name }); //query[configuration.paramForTitle]
+                            this.chart.setTitle({ text: this.state.labelY.label + " VS " + this.state.labelX.label }); //query[configuration.paramForTitle]
 
                             this.chart.redraw();
 
@@ -492,8 +509,8 @@ class TrackerTrendChart extends Component {
                     pointStart: 0,
                     lineWidth: 0
                 },
-                scatter:{
-                    lineWidth:2
+                scatter: {
+                    lineWidth: 2
                 }
             },
             credits: {
