@@ -35,3 +35,16 @@ Run selenium tests
 ```
 npm run nightwatch
 ```
+
+To deploy
+```
+./build.sh
+./package.sh
+```
+To install on vocms0167
+```
+sudo rpm -qa | grep oms
+sudo rpm -e -all oms-portal-gui
+sudo rpm -i oms-portal-gui-%{_version}-22.x86_64.rpm
+
+```
