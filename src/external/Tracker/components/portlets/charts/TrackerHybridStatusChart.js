@@ -23,12 +23,12 @@ class TrackerHybridStatusChart extends Component {
         this.id = generateId('TrackerHybridStatusChart');
         this.yAxes = [];
         this.state = {
-            displayed: false
+            displayed: false,
+            data: []
         }
     }
 
     componentDidUpdate(prevProps) {
-        console.log("in update")
         this.props.shouldUpdate(prevProps.query, this.props.query, this.loadStatusData);
         this.props.shouldRefresh(this.props, this.loadStatusData);
         this.shouldResize();
@@ -37,23 +37,30 @@ class TrackerHybridStatusChart extends Component {
     loadStatusData = (controllerExportData = this.props.controllerExportData) => {
         const { configuration } = this.props;
 
-        console.log("in load data")
         this.props.showLoader();
         this.createPieChart(configuration);
 
         this.sql = configuration.url;
 
-        this.sql = this.sql.replace("part_DB", "p6640")
-        this.sql = this.sql.replace("cond_DB", "c9820")
+        let no_display = configuration.noDisplay;
 
-        console.log("props query");
-        console.log(this.props.query);
-        console.log(this.props);
+        if(no_display && this.props.controllerExportData.tracker_data.length==0){this.props.hideLoader();this.props.onEmpty();return;}
+
+        let part_DB = this.props.configuration.part_tables[this.props.controllerExportData.tracker_moduleType + "_" + this.props.controllerExportData.tracker_hybridType];
+        let cond_DB = this.props.configuration.condition_tables[this.props.controllerExportData.tracker_moduleType + "_" + this.props.controllerExportData.tracker_hybridType];
+        this.sql = this.sql.replace("part_DB", "p" + part_DB)
+        this.sql = this.sql.replace("cond_DB", "c" + cond_DB)
 
         let sqli = this.sql.substring(0, this.sql.indexOf('where'));
         let sqlf = this.sql.substring(this.sql.indexOf('where'), this.sql.length);
 
+        console.log("this.props.controllerExportData.tracker_data")
+
+        console.log(this.props.controllerExportData.tracker_data)
+
         this.props.controllerExportData.tracker_data.map((element, i) => { sqli = this.createSQL(element, sqli, sqlf, i) });
+
+        console.log(sqli)
 
         return Resthub.json2(sqli, null, null, null, configuration.resthubUrl)
             .then(resp => {
@@ -62,14 +69,9 @@ class TrackerHybridStatusChart extends Component {
                 return this.processStatusData(data);
             })
             .then(
-                (serie) => {
-                    console.log("processed data")
-                    console.log(serie)
-
-                    console.log(this.chart.series)
-
-                    this.createPieChart(serie);
-                    this.chart.setTitle({ text: configuration.categories });
+                () => {
+                    this.createPieChart(this.formatData(this.state.data));
+                    this.chart.setTitle({ text: configuration.title });
                     this.chart.redraw();
                     this.chart.hideLoading();
                     return this.props.hideLoader();
@@ -77,7 +79,17 @@ class TrackerHybridStatusChart extends Component {
             );
     }
 
-    processStatusData = (data) => {
+    formatData = (data) => {
+        let serie = [{
+            name: 'Status',
+            colorByPoint: true,
+            data: data
+        }];
+
+        return serie;
+    }
+
+    processStatusData = (data, hideUndefined = false) => {
         const { configuration } = this.props;
 
         let cat = configuration.categories
@@ -89,29 +101,28 @@ class TrackerHybridStatusChart extends Component {
             }
         )
 
-        console.log(counts)
-
         let series = []
         for (const [key, value] of Object.entries(counts)) {
-            console.log(key, value);
             let point = {};
             point['name'] = key;
-            point['y'] = parseFloat((100. * value / data.length).toFixed(2));
+            point['y'] = value;
             series.push(point)
         }
 
-        console.log("series")
-        console.log(series)
-
-        let serie = [{
-            name: 'Status',
-            colorByPoint: true,
-            data: series
-        }];
-
-        return serie;
+        this.setState({ data: series })
+        return this.formatData(series);
 
 
+    }
+
+    trimUndefined = () => {
+
+        let series = []
+        series = this.state.data.filter(s => (s.name != 'undefined'))
+
+        console.log("here")
+        console.log(this.formatData(series))
+        return this.formatData(series);
     }
 
     createPieChart = (serie = []) => {
@@ -131,7 +142,7 @@ class TrackerHybridStatusChart extends Component {
                 text: null
             },
             tooltip: {
-                pointFormat: '{point.name}: <b>{point.percentage:.1f}%</b>'
+                pointFormat: '{point.name}: <b>{point.y}</b>'
             },
             accessibility: {
                 point: {
@@ -150,22 +161,29 @@ class TrackerHybridStatusChart extends Component {
             },
             series: serie
         };
+
         this.chart = new Highcharts.chart(this.id, options);
 
     }
 
 
     createSQL = (element, sqli, sqlf, i) => {
+        console.log("here")
 
+        
+        const skipelement= ((sqlf.search("run_Number")>-1) && element.run_number=="undefined");
+        sqlf = sqlf.replace("run_Number", "'" + element.run_number + "'")
         sqlf = sqlf.replace("serial_number", "'" + element.serial_number + "'")
         sqlf = sqlf.substring(5, sqlf.length);
         sqlf = "(" + sqlf + ")";
 
-        if (i == 0) {
-            sqli = sqli + " where " + sqlf;
+        if (!skipelement) {
+            if (i == 0) {
+                sqli = sqli + " where " + sqlf;
+            }
+            else if(!sqli.includes(" where ")){sqli = sqli + " where " + sqlf;}
+            else sqli = sqli + " or " + sqlf;
         }
-        else sqli = sqli + " or " + sqlf;
-
         return sqli;
     }
 
@@ -177,8 +195,15 @@ class TrackerHybridStatusChart extends Component {
     }
 
     handleHideCategories = (event, isChecked) => {
-        const type = isChecked ? 'logarithmic' : 'linear';
-        this.chart.yAxis[0].update({ type: type });
+        let { configuration } = this.props;
+        if (isChecked) {
+            this.createPieChart(this.trimUndefined())
+            this.chart.setTitle({ text: configuration.title + " (hidden undefined)" });
+        }
+        else {
+            this.createPieChart(this.formatData(this.state.data));
+            this.chart.setTitle({ text: configuration.title });
+        }
     }
 
     componentDidMount() {

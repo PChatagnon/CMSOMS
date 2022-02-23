@@ -134,7 +134,8 @@ class TrackerHybridController extends Component {
 			serialNumbersRange: [0, 0],
 			serialNumbersLimits: [0, 0],
 			selectedBatch: "",
-			DialogOpen: false
+			DialogOpen: false,
+			DisplayHybridList: false
 		}
 	}
 
@@ -145,11 +146,15 @@ class TrackerHybridController extends Component {
 		let mode_inConfig = controller.configuration.mode;
 
 		let id = 0;
-		let hybrid_type = mode_inConfig.length ? mode_inConfig.split('_')[1] : "All";
-		let module_type = mode_inConfig.length ? mode_inConfig.split('_')[0] : "All";
+		let module_type = mode_inConfig.length ? mode_inConfig.split('_')[0] : "2S";
+		let hybrid_type = mode_inConfig.length ? mode_inConfig.split('_')[1] : "FE";
 		let run = '',
 			runs = [];
 		let initialData = [];
+		const serialNumbersLimits = [];
+		const serialNumbersRange = [];
+
+		let part_DB = controller.configuration.part_tables[module_type + "_" + hybrid_type];
 
 
 
@@ -160,7 +165,9 @@ class TrackerHybridController extends Component {
 					runs: runs
 				},
 				exportData: {
-					tracker_data: initialData
+					tracker_data: initialData,
+					tracker_moduleType: module_type,
+					tracker_hybridType: hybrid_type
 				},
 				state: {
 					tracker_moduleType: module_type,
@@ -170,41 +177,15 @@ class TrackerHybridController extends Component {
 			}
 		}
 
-		return Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_FLUTE_ID FROM " + urlMetadata + " t ", null, null, null, RESTHUB_URL)
+		return Resthub.json2("SELECT h.SERIAL_NUMBER FROM trker_cmsr.p" + controller.configuration.part_tables[module_type + "_" + hybrid_type] + " h", null, null, null, RESTHUB_URL)
 			.then(resp => {
+				const serialNumbersOfHybrids = resp.data.data.map(s => s.serialNumber).filter(s => typeof (s) != "undefined").map(s => s.substring(12, s.length)).map(s => parseInt(s)).filter(s => !isNaN(s)).sort()
+				const serialNumbersLimits = [serialNumbersOfHybrids[0], serialNumbersOfHybrids[serialNumbersOfHybrids - 1]]
+				const serialNumbersRange = [serialNumbersOfHybrids[0], serialNumbersOfHybrids[serialNumbersOfHybrids - 1]]
+				//Add here initialization if necessary
+
 				return initData();
 			}).catch(err => initData());
-
-
-		/*return Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_FLUTE_ID FROM " + urlMetadata + " t ", null, null, null, RESTHUB_URL)
-			.then(resp => {
-				const respData = resp.data.data;
-				const fluteTypes = respData.length ? respData.map(s => s.kindOfHmFluteId) : null;
-				lastFluteType = fluteTypes ? fluteTypes[0] : null;
-				fluteType = "";
-				return Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_STRUCT_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + fluteType + "'", null, null, null, RESTHUB_URL)
-					.then(resp => {
-						const respData = resp.data.data;
-						const structureTypes = respData.length ? respData.map(s => s.kindOfHmStructId) : null;
-						lastStructureType = structureTypes ? structureTypes[0] : null;
-						structureType = ""//this.fullscreen ? lastStructureType : null
-						return Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_CONFIG_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + structureType + "'", null, null, null, RESTHUB_URL)
-							.then(resp => {
-								const respData = resp.data.data;
-								const configTypes = respData.length ? respData.map(s => s.kindOfHmConfigId) : null;
-								lastConfigType = configTypes ? configTypes[0] : null;
-								configType = ""//this.fullscreen ? lastConfigType : null
-								return Resthub.json2("SELECT DISTINCT t.KIND_OF_HM_SET_ID FROM " + urlMetadata + " t WHERE t.KIND_OF_HM_FLUTE_ID = '" + fluteType + "' AND t.KIND_OF_HM_STRUCT_ID = '" + structureType + "'AND t.KIND_OF_HM_CONFIG_ID = '" + configType + "'", null, null, null, RESTHUB_URL)
-									.then(resp => {
-										const respData = resp.data.data;
-										const setTypes = respData.length ? respData.map(s => s.kindOfHmSetId) : null;
-										lastSetType = setTypes ? setTypes[0] : null;
-										setType = ""//this.fullscreen ? lastSetType : null
-										return initData();
-									})
-							})
-					})
-			}).catch(err => initData());*/
 	}
 
 	static controllerQueryTitle(state) {
@@ -243,8 +224,8 @@ class TrackerHybridController extends Component {
 
 		return Resthub.json2(sql, null, null, null, RESTHUB_URL)
 			.then(response => {
-				const batchs = response.data.data;
-				this.updateBatch(batchs);
+				const batches = response.data.data;
+				this.updateBatch(batches);
 			}).catch(err => emptyBatch());
 	}
 
@@ -263,6 +244,7 @@ class TrackerHybridController extends Component {
 
 	/////////////////////////////\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
+	//working version
 	getHybridSerialNumber = () => {
 		let part_DB = this.props.configuration.part_tables[this.props.controllerState.tracker_moduleType + "_" + this.props.controllerState.tracker_hybridType];
 
@@ -278,23 +260,71 @@ class TrackerHybridController extends Component {
 		if (this.state.contractorOfHybrid != "All") sql += " AND h.MANUFACTURER = '" + this.state.contractorOfHybrid + "'"
 		if (this.state.batchOfHybrid != "All" && this.state.batchOfHybrid != "") sql += " AND h.BATCH_NUMBER = '" + this.state.batchOfHybrid + "'"
 
-		console.log(sql)
-
-		console.log(this.state.batchOfHybrid)
-
+		console.log("I'm here")
 		return Resthub.json2(sql, null, null, null, RESTHUB_URL)
 			.then(response => {
 				const serial_numbers = response.data.data;
-				this.updateSerialNumbers(serial_numbers);
+				console.log("serial_numbers")
+				console.log(serial_numbers)
+				this.getRunNumbers(serial_numbers)
+				//this.updateSerialNumbers(serial_numbers);
 			}).catch(err => emptyBatch());
 	}
 
-	updateSerialNumbers = (serial_numbers) => {
-		var availableHybrids = serial_numbers.filter(s => typeof (s) != "undefined")
-		var serialNumbersOfHybrids = serial_numbers.map(s => s.serialNumber).filter(s => typeof (s) != "undefined").map(s => s.substring(12, s.length)).map(s => parseInt(s)).filter(s => !isNaN(s)).sort()
+	getRunNumbers = (hybridList) => {
+		let urlDatasets = this.props.configuration.urlDatasets;
+		let urlRuns = this.props.configuration.urlRuns;
+		let part_DB = this.props.configuration.part_tables[this.props.controllerState.tracker_moduleType + "_" + this.props.controllerState.tracker_hybridType];
+		let cond_DB = this.props.configuration.condition_tables[this.props.controllerState.tracker_moduleType + "_" + this.props.controllerState.tracker_hybridType];
 
-		console.log(availableHybrids)
-		console.log(serialNumbersOfHybrids)
+
+
+		let sql = "SELECT h.SERIAL_NUMBER, r.run_number FROM trker_cmsr.p" + part_DB + " h," + urlRuns + " r, " + urlDatasets + " d, trker_cmsr.c" + cond_DB + " c "
+		sql += " where ("
+		hybridList.map((s, index) => {
+			sql += " h.SERIAL_NUMBER='" + s.serialNumber+"'" ;
+			if (index == hybridList.length - 1) { sql += ")" }
+			else sql += " or ";
+		})
+		sql += " and c.PART_SERIAL_NUMBER=h.serial_number and c.condition_data_set_id = d.id and d.run_id=r.id ORDER BY h.serial_number"
+
+		console.log("sql")
+		console.log(sql)
+
+		return Resthub.json2(sql, null, null, null, RESTHUB_URL)
+			.then(response => {
+				const run_list = response.data.data;
+				console.log("serial_numbers after run selection")
+				console.log(run_list.sort(function (a, b) { return b.runNumber - a.runNumber }))
+				hybridList.map(s => {
+					//sort run_list so the highest run number is taken
+					if(typeof(run_list.find( serialnumber_run => (serialnumber_run.serialNumber == s.serialNumber)))!='undefined'){
+						var matching_serial_number = run_list.find( serialnumber_run => (serialnumber_run.serialNumber == s.serialNumber));
+						console.log(matching_serial_number.runNumber)
+						s.runNumber = matching_serial_number.runNumber;
+					}
+					else s.runNumber = 'undefined';
+				})
+				
+				console.log(hybridList)
+				this.updateSerialNumbers(hybridList);
+
+			}).catch(err => emptyBatch());
+	}
+
+
+	validateSerialNumber = (serial_number) => {
+		var initSerialNumber = ['2SFEH', '2SSEH', 'PSPOH', 'PSROH', 'PSFEH']
+		return initSerialNumber.includes(serial_number.substring(0, 5));
+
+	}
+
+
+	updateSerialNumbers = (serial_numbers) => {
+
+		var availableHybrids = serial_numbers.filter(s => this.validateSerialNumber(s.serialNumber))
+		var serialNumbersOfHybrids = serial_numbers.map(s => s.serialNumber).filter(s => typeof (s) != "undefined").map(s => s.substring(12, s.length)).map(s => parseInt(s)).filter(s => !isNaN(s)).sort(function (a, b) { return a - b })
+
 
 		this.setState({
 			availableHybrids: availableHybrids,
@@ -308,16 +338,15 @@ class TrackerHybridController extends Component {
 		this.setState({
 			serialNumbersLimits: [this.state.serialNumbersOfHybrids[0], this.state.serialNumbersOfHybrids[this.state.serialNumbersOfHybrids.length - 1]],
 			serialNumbersRange: [this.state.serialNumbersOfHybrids[0], this.state.serialNumbersOfHybrids[this.state.serialNumbersOfHybrids.length - 1]]
-		},
-			() => { console.log(this.state) }
-		);
+		});
 	}
 
-	getBarcodeAndRun = (batchNumber) => {
-		let urlMetadata = this.props.configuration.urlMetadata;
+	getBarcodeAndRun = (serial_number) => {
 		let urlDatasets = this.props.configuration.urlDatasets;
 		let urlRuns = this.props.configuration.urlRuns;
-		let condition_tables = this.props.configuration.condition_tables.split(',');
+
+		let part_DB = this.props.configuration.part_tables[this.props.controllerState.tracker_moduleType + "_" + this.props.controllerState.tracker_hybridType];
+		let cond_DB = this.props.configuration.condition_tables[this.props.controllerState.tracker_moduleType + "_" + this.props.controllerState.tracker_hybridType];
 
 		let sqlRun = "SELECT m.part_barcode,m.kind_of_hm_set_id, m.kind_of_hm_config_id, r.run_number, da.kind_of_condition_id FROM " + urlRuns + " r, " + urlDatasets + " d, " + urlDatasets + " da, " + urlMetadata + " m "
 			+ "where m.part_barcode  LIKE '" + batchNumber + "%"
@@ -392,13 +421,11 @@ class TrackerHybridController extends Component {
 
 		let HybridList = []
 		this.setState({ loading: true });
-		//console.log(this.state.availableHybrids);
-		//console.log(this.state.availableHybrids.map(s => (parseInt(s.serialNumber.substring(12, s.length).replace(/^0+/, ''))) > this.state.serialNumbersRange[0] && parseInt(s.serialNumber.substring(12, s.length).replace(/^0+/, '')) < this.state.serialNumbersRange[1]));
 		this.state.availableHybrids.filter(s => (parseInt(s.serialNumber.substring(12, s.length).replace(/^0+/, ''))) >= this.state.serialNumbersRange[0] && parseInt(s.serialNumber.substring(12, s.length).replace(/^0+/, '')) <= this.state.serialNumbersRange[1]).forEach(s => {
 			HybridList.push({
 				serial_number: s.serialNumber,
 				batch_number: s.batchNumber,
-				run_number: s.batchNumber
+				run_number: s.runNumber
 			})
 		})
 		//console.log("HybridList");
@@ -414,7 +441,7 @@ class TrackerHybridController extends Component {
 
 
 		var HybridList = this.writeHybridList()
-		
+
 		HybridList.map(s => {
 			if (HybridList.length > 0 && !controllerExportData.tracker_data.find(item => item.serial_number === (s.serial_number))) {
 				controllerExportData.tracker_data.push(s)
@@ -441,7 +468,7 @@ class TrackerHybridController extends Component {
 		let update_tracker_data = [];
 		update_tracker_data = controllerExportData.tracker_data.filter(item => item.serial_number !== value);
 		controllerExportData.tracker_data = update_tracker_data;
-		this.props.updateControllerData(controllerData);
+		this.props.updateControllerData(controllerExportData);
 
 		let {
 			controllerState
@@ -464,6 +491,15 @@ class TrackerHybridController extends Component {
 		this.setState({ selectedBatch: value })
 	}
 
+	onExcludeUntested = () => {
+		let {
+			controllerExportData
+		} = this.props;
+		let update_tracker_data = controllerExportData.tracker_data.filter(s => (s.run_number!='undefined'));
+		controllerExportData.tracker_data = update_tracker_data;
+		this.props.updateControllerData(controllerExportData)
+	}
+
 	onInspectBatch = (value) => {
 		console.log(this.props)
 		if (this.state.selectedBatch != "") this.setState({ DialogOpen: true })
@@ -473,18 +509,36 @@ class TrackerHybridController extends Component {
 		this.setState({ DialogOpen: false })
 	}
 
+	onDisplayHybridList = () => {
+		if (!this.state.DisplayHybridList)this.setState({ DisplayHybridList: true })
+		else this.setState({ DisplayHybridList: false })
+	}
+
+	DisplayHybridListText = () => {
+		if (!this.state.DisplayHybridList)return "Display hybrid list"
+		else return "Hide hybrid list"
+		
+	}
+
 	renderChip = () => {
 		let {
 			controllerExportData
 		} = this.props;
 		console.log("HERE")
+
+		if(!this.state.DisplayHybridList){return;}
+
 		return (controllerExportData.tracker_data.map(e => {
 			var colormode = "default"
-			if (this.state.selectedBatch == e.serial_number) { colormode = "primary" }
+			var variantmode = "default"
+			if (this.state.selectedBatch == e.serial_number && e.run_number=="undefined") { variantmode = "outlined" }
+			if (this.state.selectedBatch == e.serial_number && e.run_number!="undefined") { colormode = "primary" }
+			if (e.run_number=="undefined") { colormode = "secondary" }
 			return (
 				<Chip
 					color={colormode}
-					key={e.serial_number + "hybrid"}
+					variant={variantmode}
+					key={e.serial_number}
 					label={e.serial_number}
 					onDelete={() => this.onIDDelete(e.serial_number)}
 					className={this.props.classes.chip}
@@ -522,9 +576,11 @@ class TrackerHybridController extends Component {
 
 	handleModuleChange = (event) => {
 		let {
-			controllerState
+			controllerState, controllerExportData
 		} = this.props;
 		controllerState.tracker_moduleType = event.target.value;
+		controllerExportData.tracker_moduleType = event.target.value;
+		this.props.updateControllerData(controllerExportData)
 		this.props.updateState(controllerState,
 			() => { this.fetchBatchNumbers(); this.getHybridSerialNumber() }
 		);
@@ -532,9 +588,11 @@ class TrackerHybridController extends Component {
 
 	handleHybridChange = (event) => {
 		let {
-			controllerState
+			controllerState, controllerExportData
 		} = this.props;
 		controllerState.tracker_hybridType = event.target.value;
+		controllerExportData.tracker_hybridType = event.target.value;
+		this.props.updateControllerData(controllerExportData)
 		this.props.updateState(controllerState,
 			() => { this.fetchBatchNumbers(); this.getHybridSerialNumber() }
 		);
@@ -590,9 +648,9 @@ class TrackerHybridController extends Component {
 				value={this.state.spacingOfHybrid}
 				onChange={this.handleSpacingChange}
 			>
-				<MenuItem value={"All"}>All</MenuItem>
+				<MenuItem key="All" value={"All"}>All</MenuItem>
 				{spacings.map((spacing, index) =>
-					<MenuItem value={spacing}>  {spacing} mm  </MenuItem>
+					<MenuItem key={spacing} value={spacing}>  {spacing} mm  </MenuItem>
 				)}
 			</Select>
 		);
@@ -620,7 +678,7 @@ class TrackerHybridController extends Component {
 				onChange={this.handleHybridChange}
 			>
 				{hybrids.map((hybrid, index) =>
-					<MenuItem value={hybrid}>  {hybrid}  </MenuItem>
+					<MenuItem key={hybrid} value={hybrid}>  {hybrid}  </MenuItem>
 				)}
 			</Select>
 		)
@@ -629,13 +687,10 @@ class TrackerHybridController extends Component {
 	renderBatchList = () => {
 
 		return this.state.batch_List.map((batch, index) => {
-			return <MenuItem value={batch}>  {batch}  </MenuItem>
+			return <MenuItem key={batch} value={batch}>  {batch}  </MenuItem>
 		})
 	}
 
-	valuetext(value) {
-		return `${value}°C`;
-	}
 
 
 
@@ -654,8 +709,8 @@ class TrackerHybridController extends Component {
 							onChange={this.handleModuleChange}
 							disabled={this.enableModuleHybrid()}
 						>
-							<MenuItem value={"2S"}>2S</MenuItem>
-							<MenuItem value={"PS"}>PS</MenuItem>
+							<MenuItem key={"2S"} value={"2S"}>2S</MenuItem>
+							<MenuItem key={"PS"} value={"PS"}>PS</MenuItem>
 						</Select>
 					</FormControl>
 
@@ -678,9 +733,9 @@ class TrackerHybridController extends Component {
 							value={this.state.sideOfModule}
 							onChange={this.handleSideChange}
 						>
-							<MenuItem value={"All"}>All</MenuItem>
-							<MenuItem value={"L"}>Left</MenuItem>
-							<MenuItem value={"R"}>Right</MenuItem>
+							<MenuItem key={"All"} value={"All"}>All</MenuItem>
+							<MenuItem key={"L"} value={"L"}>Left</MenuItem>
+							<MenuItem key={"R"} value={"R"}>Right</MenuItem>
 						</Select>
 					</FormControl>
 
@@ -696,9 +751,9 @@ class TrackerHybridController extends Component {
 								value={this.state.contractorOfHybrid}
 								onChange={this.handleContractorChange}
 							>
-								<MenuItem value={"All"}>All</MenuItem>
-								<MenuItem value={"Valtronic"}>Valtronic</MenuItem>
-								<MenuItem value={"AEMTEC"}>AEMTEC</MenuItem>
+								<MenuItem key={"All"} value={"All"}>All</MenuItem>
+								<MenuItem key={"Valtronic"} value={"Valtronic"}>Valtronic</MenuItem>
+								<MenuItem key={"AEMTEC"} value={"AEMTEC"}>AEMTEC</MenuItem>
 							</Select>
 						</FormControl>
 
@@ -740,12 +795,12 @@ class TrackerHybridController extends Component {
 						/>
 
 						<Slider
+							key='slider'
 							value={this.state.serialNumbersRange}
 							style={{ marginLeft: 20, marginTop: 30, marginBottom: -20, maxWidth: 600 }}
 							onChange={this.handleSliderChange}
 							valueLabelDisplay="auto"
 							aria-labelledby="range-slider"
-							getAriaValueText={this.valuetext}
 							valueLabelDisplay="on"
 							marks={this.state.serialNumbersOfHybrids}
 							min={this.state.serialNumbersLimits[0]}
@@ -786,9 +841,16 @@ class TrackerHybridController extends Component {
 
 					<br />
 					<div>
-						<Typography variant="subtitle2" gutterBottom style={{ marginTop: 0 }}>
-							Selected hybrids:
-						</Typography>
+						<Button
+							//disabled={this.props.controllerState.tracker_runName === '' 
+							//&& this.props.controllerState.tracker_runTypeNumber === ''}
+							style={{ marginLeft: 10, marginTop: 10, marginBottom: 10 }}
+							variant="contained"
+							className={classes.button}
+							onClick={this.onDisplayHybridList}>
+							{this.DisplayHybridListText()}
+						</Button>
+						
 						<div style={styles.wrapper}>
 							{this.renderChip()}
 						</div>
@@ -801,8 +863,17 @@ class TrackerHybridController extends Component {
 							onClick={this.onInspectBatch}>
 							Inspect hybrid
 						</Button>
+						<Button
+							//disabled={this.props.controllerState.tracker_runName === '' 
+							//&& this.props.controllerState.tracker_runTypeNumber === ''}
+							style={{ marginLeft: 10, marginTop: 10, marginBottom: 10 }}
+							variant="contained"
+							className={classes.button}
+							onClick={this.onExcludeUntested}>
+							Exclude untested hybrids
+						</Button>
 						<Dialog onClose={this.onCloseInspectBatch} open={this.state.DialogOpen} style={{ minWidth: 700 }}>
-							<DialogTitle>Components of {this.state.selectedBatch} :</DialogTitle>
+							<DialogTitle>{this.state.selectedBatch} info:</DialogTitle>
 							<List sx={{ pt: 0 }}>
 								{this.props.controllerExportData.tracker_data.filter((batch) => batch.tracker_id == this.state.selectedBatch).map((batch) => batch.barcodeRunList.map(item, index =>
 									<ListItem key={index}>
@@ -818,3 +889,7 @@ class TrackerHybridController extends Component {
 	}
 }
 export default withStyles(styles)(TrackerHybridController);
+
+//<Typography variant="subtitle2" gutterBottom style={{ marginTop: 0 }}>
+						//	Selected hybrids (untested hybrids in red):
+						//</Typography>
