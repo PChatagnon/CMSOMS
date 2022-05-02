@@ -44,7 +44,7 @@ class TrackerHybridStatusChart extends Component {
 
         let no_display = configuration.noDisplay;
 
-        if(no_display && this.props.controllerExportData.tracker_data.length==0){this.props.hideLoader();this.props.onEmpty();return;}
+        if (no_display && this.props.controllerExportData.tracker_data.length == 0) { this.props.hideLoader(); this.props.onEmpty(); return; }
 
         let part_DB = this.props.configuration.part_tables[this.props.controllerExportData.tracker_moduleType + "_" + this.props.controllerExportData.tracker_hybridType];
         let cond_DB = this.props.configuration.condition_tables[this.props.controllerExportData.tracker_moduleType + "_" + this.props.controllerExportData.tracker_hybridType];
@@ -70,7 +70,17 @@ class TrackerHybridStatusChart extends Component {
             })
             .then(
                 () => {
-                    this.createPieChart(this.formatData(this.state.data));
+                    if (configuration.chart_mode == "pie_chart") this.createPieChart(this.formatData(this.state.data));
+                    if (configuration.chart_mode == "stack_chart") {
+                        this.createStackChart(
+                            this.format_2D_Data(this.state.data),
+                            this.get_categories_2D_Data(this.state.data)
+                        );
+                    }
+
+                    console.log("this.state.data")
+                    console.log(this.state.data)
+
                     this.chart.setTitle({ text: configuration.title });
                     this.chart.redraw();
                     this.chart.hideLoading();
@@ -89,29 +99,87 @@ class TrackerHybridStatusChart extends Component {
         return serie;
     }
 
-    processStatusData = (data, hideUndefined = false) => {
+    format_2D_Data = (data) => {
+
+        //First we need a list of subcategories
+        let sub_cat = []
+        for (const [key_cat, value_cat] of Object.entries(data)) {
+            for (const [key, value] of Object.entries(value_cat)) {
+                sub_cat = sub_cat.includes(key) ? sub_cat : sub_cat.concat(key)
+            }
+        }
+
+        let serie = []
+        for (const sub_category of sub_cat) {
+            let sub_serie = []
+            for (const [key_cat, value_cat] of Object.entries(data)) {
+                console.log(key_cat)
+                if(value_cat[sub_category]){
+                    sub_serie.push(value_cat[sub_category])
+                }
+                else{
+                    sub_serie.push(0)
+                }
+            }
+            serie.push({
+                name: sub_category,
+                data: sub_serie
+            })
+        }
+
+        console.log("in format_2D_Data")
+        console.log(serie)
+        return serie;
+    }
+
+    get_categories_2D_Data = (data) => {
+        let cat_2D = Object.keys(data);
+        console.log(cat_2D)
+        console.log(data)
+        return cat_2D;
+    }
+
+
+    processStatusData = (data) => {
         const { configuration } = this.props;
 
         let cat = configuration.categories
-        console.log(cat)
-        const counts = {};
-        data.map(
-            (element) => {
-                counts[element[cat]] = counts[element[cat]] ? counts[element[cat]] + 1 : 1;
-            }
-        )
+        let sub_cat = configuration.subcategories
 
+        let chart_mode = configuration.chart_mode
         let series = []
-        for (const [key, value] of Object.entries(counts)) {
-            let point = {};
-            point['name'] = key;
-            point['y'] = value;
-            series.push(point)
+
+        if (chart_mode == "pie_chart") {
+            const counts = {};
+            data.map(
+                (element) => {
+                    counts[element[cat]] = counts[element[cat]] ? counts[element[cat]] + 1 : 1;
+                }
+            )
+
+
+            for (const [key, value] of Object.entries(counts)) {
+
+
+                let point = {};
+                point['name'] = key;
+                point['y'] = value;
+                series.push(point)
+            }
+            this.setState({ data: series })
         }
 
-        this.setState({ data: series })
-        return this.formatData(series);
+        if (chart_mode == "stack_chart") {
+            const counts = {};
+            data.map(
+                (element) => {
+                    counts[element[cat]] = counts[element[cat]] ? counts[element[cat]] : {};
+                    counts[element[cat]][element[sub_cat]] = counts[element[cat]][element[sub_cat]] ? counts[element[cat]][element[sub_cat]] + 1 : 1;
+                }
+            )
 
+            this.setState({ data: counts })
+        }
 
     }
 
@@ -123,6 +191,50 @@ class TrackerHybridStatusChart extends Component {
         console.log("here")
         console.log(this.formatData(series))
         return this.formatData(series);
+    }
+
+    createStackChart = (serie = [], cat = []) => {
+        const { configuration } = this.props;
+
+        let cat_string = configuration.categories
+        let sub_cat_string = configuration.subcategories
+        const options = {
+            chart: {
+                type: 'column'
+            },
+            title: {
+                text: 'Stacked column chart'
+            },
+            xAxis: {
+                categories: cat,
+                title: {
+                    text: cat_string
+                }
+            },
+            yAxis: {
+                min: 0,
+                title: {
+                    text: sub_cat_string
+                }
+            },
+            tooltip: {
+                pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b> ({point.percentage:.0f}%)<br/>',
+                shared: true
+            },
+            plotOptions: {
+                column: {
+                    stacking: 'percent'
+                },
+                dataLabels: {
+                    enabled: true,
+                    format: '<b>{point.name}</b>: {point.percentage:.1f} %'
+                }
+            },
+            series: serie
+        };
+
+        this.chart = new Highcharts.chart(this.id, options);
+
     }
 
     createPieChart = (serie = []) => {
@@ -170,8 +282,8 @@ class TrackerHybridStatusChart extends Component {
     createSQL = (element, sqli, sqlf, i) => {
         console.log("here")
 
-        
-        const skipelement= ((sqlf.search("run_Number")>-1) && element.run_number=="undefined");
+
+        const skipelement = ((sqlf.search("run_Number") > -1) && element.run_number == "undefined");
         sqlf = sqlf.replace("run_Number", "'" + element.run_number + "'")
         sqlf = sqlf.replace("serial_number", "'" + element.serial_number + "'")
         sqlf = sqlf.substring(5, sqlf.length);
@@ -181,7 +293,7 @@ class TrackerHybridStatusChart extends Component {
             if (i == 0) {
                 sqli = sqli + " where " + sqlf;
             }
-            else if(!sqli.includes(" where ")){sqli = sqli + " where " + sqlf;}
+            else if (!sqli.includes(" where ")) { sqli = sqli + " where " + sqlf; }
             else sqli = sqli + " or " + sqlf;
         }
         return sqli;
@@ -197,11 +309,13 @@ class TrackerHybridStatusChart extends Component {
     handleHideCategories = (event, isChecked) => {
         let { configuration } = this.props;
         if (isChecked) {
-            this.createPieChart(this.trimUndefined())
+            if (configuration.chart_mode == "pie_chart") this.createPieChart(this.trimUndefined());
+            if (configuration.chart_mode == "stack_chart") this.createStackChart();
             this.chart.setTitle({ text: configuration.title + " (hidden undefined)" });
         }
         else {
-            this.createPieChart(this.formatData(this.state.data));
+            if (configuration.chart_mode == "pie_chart") this.createPieChart(this.formatData(this.state.data));
+            if (configuration.chart_mode == "stack_chart") this.createStackChart();
             this.chart.setTitle({ text: configuration.title });
         }
     }

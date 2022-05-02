@@ -109,7 +109,7 @@ class TrackerHybridController extends Component {
 		"PSPOH": "p6780"
 	};
 
-	static controllerHeight = 460;
+	static controllerHeight = 450;
 
 	constructor() {
 		super();
@@ -151,14 +151,12 @@ class TrackerHybridController extends Component {
 		let run = '',
 			runs = [];
 		let initialData = [];
-		let limitrangeup = 0;
-		let limitrangedown = 0;
-		let limit_Up = 0;
-		let limit_Down = 0;
-
+		const serialNumbersLimits = [];
+		const serialNumbersRange = [];
 
 		let part_DB = controller.configuration.part_tables[module_type + "_" + hybrid_type];
-		
+		console.log("this.controller")
+		console.log(controller)
 
 
 		let initData = () => {
@@ -171,10 +169,8 @@ class TrackerHybridController extends Component {
 					tracker_data: initialData,
 					tracker_moduleType: module_type,
 					tracker_hybridType: hybrid_type,
-					limitrangeup: limitrangeup,
-					limitrangedown: limitrangedown,
-					limit_Up: limit_Up,
-					limit_Down: limit_Down
+					limitrangeup: 150,
+					limitrangedown: 145
 				},
 				state: {
 					tracker_moduleType: module_type,
@@ -186,13 +182,20 @@ class TrackerHybridController extends Component {
 
 		return Resthub.json2("SELECT h.SERIAL_NUMBER FROM trker_cmsr.p" + controller.configuration.part_tables[module_type + "_" + hybrid_type] + " h", null, null, null, RESTHUB_URL)
 			.then(resp => {
-				const serialNumbersOfHybrids = resp.data.data.map(s => s.serialNumber).filter(s => typeof (s) != "undefined").map(s => s.substring(12, s.length)).map(s => parseInt(s)).filter(s => !isNaN(s)).sort(function (a, b) { return a - b })
+				const serialNumbersOfHybrids = resp.data.data.map(s => s.serialNumber).filter(s => typeof (s) != "undefined").map(s => s.substring(12, s.length)).map(s => parseInt(s)).filter(s => !isNaN(s)).sort(function(a, b){return a-b})
 				const serialNumbersLimits = [serialNumbersOfHybrids[0], serialNumbersOfHybrids[serialNumbersOfHybrids.length - 1]]
-				limitrangedown = serialNumbersLimits[0]
-				limitrangeup = serialNumbersLimits[1]
-				limit_Down = serialNumbersLimits[0]
-				limit_Up = serialNumbersLimits[1]
+				const serialNumbersRange = [serialNumbersOfHybrids[0], serialNumbersOfHybrids[serialNumbersOfHybrids.length - 1]]
+				console.log("intitialisation of the controller")
+				console.log(resp)
+				console.log(serialNumbersLimits)
 				//Add here initialization if necessary
+				console.log("this.state")
+				console.log(this.controller)
+				this.setState({
+					serialNumbersRange: serialNumbersLimits,
+					serialNumbersLimits: serialNumbersLimits
+				});
+
 				return initData();
 			}).catch(err => initData());
 	}
@@ -242,6 +245,9 @@ class TrackerHybridController extends Component {
 	updateBatch = (batchs) => {
 		var batch_List = batchs.map(s => s.batchNumber).filter(s => typeof (s) != "undefined")
 		batch_List.unshift("All");
+
+		//console.log(batch_List)
+
 		this.setState({
 			batch_List: batch_List,
 			errMessage: ''
@@ -266,14 +272,15 @@ class TrackerHybridController extends Component {
 		if (this.state.contractorOfHybrid != "All") sql += " AND h.MANUFACTURER = '" + this.state.contractorOfHybrid + "'"
 		if (this.state.batchOfHybrid != "All" && this.state.batchOfHybrid != "") sql += " AND h.BATCH_NUMBER = '" + this.state.batchOfHybrid + "'"
 
-		
-		this.setState({ loading: true });
-		
+		console.log("I'm here")
 		return Resthub.json2(sql, null, null, null, RESTHUB_URL)
 			.then(response => {
 				const serial_numbers = response.data.data;
+				console.log("serial_numbers")
+				console.log(serial_numbers)
 				this.getRunNumbers(serial_numbers)
-			}).catch(err => {() => {return} });
+				//this.updateSerialNumbers(serial_numbers);
+			}).catch(err => emptyBatch());
 	}
 
 	getRunNumbers = (hybridList) => {
@@ -287,12 +294,14 @@ class TrackerHybridController extends Component {
 		let sql = "SELECT h.SERIAL_NUMBER, r.run_number FROM trker_cmsr.p" + part_DB + " h," + urlRuns + " r, " + urlDatasets + " d, trker_cmsr.c" + cond_DB + " c "
 		sql += " where ("
 		hybridList.map((s, index) => {
-			sql += " h.SERIAL_NUMBER='" + s.serialNumber + "'";
+			sql += " h.SERIAL_NUMBER='" + s.serialNumber+"'" ;
 			if (index == hybridList.length - 1) { sql += ")" }
 			else sql += " or ";
 		})
 		sql += " and c.PART_SERIAL_NUMBER=h.serial_number and c.condition_data_set_id = d.id and d.run_id=r.id ORDER BY h.serial_number"
 
+		console.log("sql")
+		console.log(sql)
 
 		return Resthub.json2(sql, null, null, null, RESTHUB_URL)
 			.then(response => {
@@ -301,17 +310,18 @@ class TrackerHybridController extends Component {
 				console.log(run_list.sort(function (a, b) { return b.runNumber - a.runNumber }))
 				hybridList.map(s => {
 					//sort run_list so the highest run number is taken
-					if (typeof (run_list.find(serialnumber_run => (serialnumber_run.serialNumber == s.serialNumber))) != 'undefined') {
-						var matching_serial_number = run_list.find(serialnumber_run => (serialnumber_run.serialNumber == s.serialNumber));
+					if(typeof(run_list.find( serialnumber_run => (serialnumber_run.serialNumber == s.serialNumber)))!='undefined'){
+						var matching_serial_number = run_list.find( serialnumber_run => (serialnumber_run.serialNumber == s.serialNumber));
+						console.log(matching_serial_number.runNumber)
 						s.runNumber = matching_serial_number.runNumber;
 					}
 					else s.runNumber = 'undefined';
 				})
-
+				
 				console.log(hybridList)
 				this.updateSerialNumbers(hybridList);
 
-			}).catch(err => {() => {return} });
+			}).catch(err => emptyBatch());
 	}
 
 
@@ -332,23 +342,15 @@ class TrackerHybridController extends Component {
 			availableHybrids: availableHybrids,
 			serialNumbersOfHybrids: serialNumbersOfHybrids
 		},
-			() => { this.updateSlider(); this.fetchBatchNumbers(); this.setState({ loading: false });}
+			() => { this.updateSlider(); this.fetchBatchNumbers(); console.log(this.state) }
 		);
 	}
 
 	updateSlider = () => {
-
 		this.setState({
 			serialNumbersLimits: [this.state.serialNumbersOfHybrids[0], this.state.serialNumbersOfHybrids[this.state.serialNumbersOfHybrids.length - 1]],
 			serialNumbersRange: [this.state.serialNumbersOfHybrids[0], this.state.serialNumbersOfHybrids[this.state.serialNumbersOfHybrids.length - 1]]
-		},
-			() => {
-				this.props.updateControllerData(this.props.controllerExportData.limitrangeup = this.state.serialNumbersRange[1]);
-				this.props.updateControllerData(this.props.controllerExportData.limitrangedown = this.state.serialNumbersRange[0]);
-				this.props.updateControllerData(this.props.controllerExportData.limit_Up = this.state.serialNumbersRange[1]);
-				this.props.updateControllerData(this.props.controllerExportData.limit_Down = this.state.serialNumbersRange[0]);
-			}
-		);
+		});
 	}
 
 	getBarcodeAndRun = (serial_number) => {
@@ -430,7 +432,7 @@ class TrackerHybridController extends Component {
 	writeHybridList = () => {
 
 		let HybridList = []
-		//this.setState({ loading: true });
+		this.setState({ loading: true });
 		this.state.availableHybrids.filter(s => (parseInt(s.serialNumber.substring(12, s.length).replace(/^0+/, ''))) >= this.state.serialNumbersRange[0] && parseInt(s.serialNumber.substring(12, s.length).replace(/^0+/, '')) <= this.state.serialNumbersRange[1]).forEach(s => {
 			HybridList.push({
 				serial_number: s.serialNumber,
@@ -438,6 +440,8 @@ class TrackerHybridController extends Component {
 				run_number: s.runNumber
 			})
 		})
+		//console.log("HybridList");
+		//console.log(HybridList);
 
 		return HybridList;
 	}
@@ -447,10 +451,6 @@ class TrackerHybridController extends Component {
 			controllerExportData
 		} = this.props;
 
-		if (this.state.availableHybrids.length == 0) {
-			this.fetchBatchNumbers().then(() => this.getHybridSerialNumber().then(() => this.onBatchAdd()));
-
-		}
 
 		var HybridList = this.writeHybridList()
 
@@ -467,7 +467,7 @@ class TrackerHybridController extends Component {
 
 		controllerState.tracker_id = controllerState.tracker_id + 1;
 		this.props.updateState(controllerState);
-		//this.setState({ loading: false });
+		this.setState({ loading: false });
 
 
 
@@ -482,7 +482,6 @@ class TrackerHybridController extends Component {
 		controllerExportData.tracker_data = update_tracker_data;
 		this.props.updateControllerData(controllerExportData);
 
-		//This hack is used to update the portlets, when cliking on Apply
 		let {
 			controllerState
 		} = this.props;
@@ -508,20 +507,13 @@ class TrackerHybridController extends Component {
 		let {
 			controllerExportData
 		} = this.props;
-		let update_tracker_data = controllerExportData.tracker_data.filter(s => (s.run_number != 'undefined'));
+		let update_tracker_data = controllerExportData.tracker_data.filter(s => (s.run_number!='undefined'));
 		controllerExportData.tracker_data = update_tracker_data;
 		this.props.updateControllerData(controllerExportData)
-
-		//This hack is used to update the portlets, when cliking on Apply
-		let {
-			controllerState
-		} = this.props;
-
-		controllerState.tracker_id = controllerState.tracker_id + 1;
-		this.props.updateState(controllerState);
 	}
 
 	onInspectBatch = (value) => {
+		console.log(this.props)
 		if (this.state.selectedBatch != "") this.setState({ DialogOpen: true })
 	}
 
@@ -530,29 +522,30 @@ class TrackerHybridController extends Component {
 	}
 
 	onDisplayHybridList = () => {
-		if (!this.state.DisplayHybridList) this.setState({ DisplayHybridList: true })
+		if (!this.state.DisplayHybridList)this.setState({ DisplayHybridList: true })
 		else this.setState({ DisplayHybridList: false })
 	}
 
 	DisplayHybridListText = () => {
-		if (!this.state.DisplayHybridList) return "Display hybrid list"
+		if (!this.state.DisplayHybridList)return "Display hybrid list"
 		else return "Hide hybrid list"
-
+		
 	}
 
 	renderChip = () => {
 		let {
 			controllerExportData
 		} = this.props;
+		console.log("HERE")
 
-		if (!this.state.DisplayHybridList) { return; }
+		if(!this.state.DisplayHybridList){return;}
 
 		return (controllerExportData.tracker_data.map(e => {
 			var colormode = "default"
 			var variantmode = "default"
-			if (this.state.selectedBatch == e.serial_number && e.run_number == "undefined") { variantmode = "outlined" }
-			if (this.state.selectedBatch == e.serial_number && e.run_number != "undefined") { variantmode = "outlined" /*colormode = "primary"*/ }
-			if (e.run_number == "undefined") { colormode = "secondary" }
+			if (this.state.selectedBatch == e.serial_number && e.run_number=="undefined") { variantmode = "outlined" }
+			if (this.state.selectedBatch == e.serial_number && e.run_number!="undefined") { variantmode = "outlined" /*colormode = "primary"*/ }
+			if (e.run_number=="undefined") { colormode = "secondary" }
 			return (
 				<Chip
 					color={colormode}
@@ -581,46 +574,16 @@ class TrackerHybridController extends Component {
 
 	handleTextMinChange = (event) => {
 		const maxRange = this.state.serialNumbersRange[1];
-		if (parseInt(event.target.value) <= maxRange && (parseInt(event.target.value)) >= this.state.serialNumbersLimits[0]) {
-			this.setState({ serialNumbersRange: [parseInt(event.target.value), maxRange] },
-				() => {
-					this.props.controllerExportData.limitrangeup = this.state.serialNumbersRange[1]
-					this.props.controllerExportData.limitrangedown = this.state.serialNumbersRange[0]
-
-					this.props.updateControllerData(this.props.controllerExportData.limitrangeup);
-					this.props.updateControllerData(this.props.controllerExportData.limitrangedown);
-				}
-			)
-		};
+		if (parseInt(event.target.value) <= maxRange && (parseInt(event.target.value)) >= this.state.serialNumbersLimits[0]) { this.setState({ serialNumbersRange: [parseInt(event.target.value), maxRange] }) };
 	}
 
 	handleTextMaxChange = (event) => {
 		const minRange = this.state.serialNumbersRange[0];
-
-		if (parseInt(event.target.value) >= minRange && (parseInt(event.target.value)) <= this.state.serialNumbersLimits[1]) {
-			this.setState({ serialNumbersRange: [minRange, parseInt(event.target.value)] },
-				() => {
-
-					this.props.controllerExportData.limitrangeup = this.state.serialNumbersRange[1]
-					this.props.controllerExportData.limitrangedown = this.state.serialNumbersRange[0]
-
-					this.props.updateControllerData(this.props.controllerExportData.limitrangeup);
-					this.props.updateControllerData(this.props.controllerExportData.limitrangedown);
-				}
-			);
-		};
+		if (parseInt(event.target.value) >= minRange && (parseInt(event.target.value)) <= this.state.serialNumbersLimits[1]) this.setState({ serialNumbersRange: [minRange, parseInt(event.target.value)] });
 	}
 
 	handleSliderChange = (event, newValue) => {
-		this.setState({ serialNumbersRange: newValue },
-			() => {
-				this.props.controllerExportData.limitrangeup = this.state.serialNumbersRange[1]
-				this.props.controllerExportData.limitrangedown = this.state.serialNumbersRange[0]
-
-				this.props.updateControllerData(this.props.controllerExportData.limitrangeup);
-				this.props.updateControllerData(this.props.controllerExportData.limitrangedown);
-			}
-		);
+		this.setState({ serialNumbersRange: newValue });
 	};
 
 	handleModuleChange = (event) => {
@@ -666,6 +629,7 @@ class TrackerHybridController extends Component {
 		this.setState({ contractorOfHybrid: event.target.value },
 			() => { this.fetchBatchNumbers(); this.getHybridSerialNumber() }
 		);
+		console.log(this.props.controllerExportData)
 	};
 
 	handleBatchChange = (event) => {
@@ -681,9 +645,6 @@ class TrackerHybridController extends Component {
 
 
 	renderSpacingList = () => {
-
-
-
 		var spacings = ['4.0', '2.6', '1.8'];
 		var spacings_2S = ['4.0', '1.8'];
 		var spacings_PS = ['4.0', '2.6', '1.8'];
@@ -834,13 +795,13 @@ class TrackerHybridController extends Component {
 
 
 						<Input
-							value={this.props.controllerExportData.limitrangedown}
+							value={this.state.serialNumbersRange[0]}
 							label="Adjust max."
 							onChange={this.handleTextMinChange}
 							inputProps={{
 								step: 1,
-								min: this.props.controllerExportData.limit_Down,
-								max: this.props.controllerExportData.limit_Up,
+								min: this.state.serialNumbersLimits[0],
+								max: this.state.serialNumbersLimits[1],
 								type: 'number',
 								'aria-labelledby': 'input-slider',
 							}}
@@ -848,28 +809,28 @@ class TrackerHybridController extends Component {
 
 						<Slider
 							key='slider'
-							value={[this.props.controllerExportData.limitrangedown, this.props.controllerExportData.limitrangeup]}
+							value={this.state.serialNumbersRange}
 							style={{ marginLeft: 20, marginTop: 30, marginBottom: -20, maxWidth: 600 }}
 							onChange={this.handleSliderChange}
 							valueLabelDisplay="auto"
 							aria-labelledby="range-slider"
 							valueLabelDisplay="on"
 							marks={this.state.serialNumbersOfHybrids}
-							min={this.props.controllerExportData.limit_Down}
-							max={this.props.controllerExportData.limit_Up}
+							min={this.state.serialNumbersLimits[0]}
+							max={this.state.serialNumbersLimits[1]}
 						/>
 
 
 						<Input
-							value={this.props.controllerExportData.limitrangeup}
+							value={this.state.serialNumbersRange[1]}
 							margin="dense"
 							label="Adjust max."
 							onChange={this.handleTextMaxChange}
 							style={{ marginLeft: 20, marginTop: -40, maxWidth: 60 }}
 							inputProps={{
 								step: 1,
-								min: this.props.controllerExportData.limit_Down,
-								max: this.props.controllerExportData.limit_Up,
+								min: this.state.serialNumbersLimits[0],
+								max: this.state.serialNumbersLimits[1],
 								type: 'number',
 								'aria-labelledby': 'input-slider',
 							}}
@@ -878,11 +839,12 @@ class TrackerHybridController extends Component {
 
 
 						<Button
+							//disabled={this.props.controllerState.tracker_runName === '' 
+							//&& this.props.controllerState.tracker_runTypeNumber === ''}
 							style={{ marginLeft: 20, marginTop: -10 }}
 							variant="contained"
 							className={classes.button}
-							onClick={this.onBatchAdd}
-							disabled={this.state.loading}>
+							onClick={this.onBatchAdd}>
 							Add hybrids
 						</Button>
 						{this.renderLoading()}
@@ -893,17 +855,21 @@ class TrackerHybridController extends Component {
 					<br />
 					<div>
 						<Button
+							//disabled={this.props.controllerState.tracker_runName === '' 
+							//&& this.props.controllerState.tracker_runTypeNumber === ''}
 							style={{ marginLeft: 10, marginTop: 10, marginBottom: 10 }}
 							variant="contained"
 							className={classes.button}
 							onClick={this.onDisplayHybridList}>
 							{this.DisplayHybridListText()}
 						</Button>
-
+						
 						<div style={styles.wrapper}>
 							{this.renderChip()}
 						</div>
 						<Button
+							//disabled={this.props.controllerState.tracker_runName === '' 
+							//&& this.props.controllerState.tracker_runTypeNumber === ''}
 							style={{ marginLeft: 10, marginTop: 10, marginBottom: 10 }}
 							variant="contained"
 							className={classes.button}
@@ -911,6 +877,8 @@ class TrackerHybridController extends Component {
 							Inspect hybrid
 						</Button>
 						<Button
+							//disabled={this.props.controllerState.tracker_runName === '' 
+							//&& this.props.controllerState.tracker_runTypeNumber === ''}
 							style={{ marginLeft: 10, marginTop: 10, marginBottom: 10 }}
 							variant="contained"
 							className={classes.button}

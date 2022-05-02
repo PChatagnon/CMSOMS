@@ -743,10 +743,8 @@ getBarcodeAndRun = (batchNumber) => {
 
 						<Input
 							value={this.state.batchRange[0]}
-							//margin="dense"
 							label="Adjust max."
 							onChange={this.handleTextMinChange}
-							//style={{ marginLeft: 20, marginTop: -40, maxWidth: 60 }}
 							inputProps={{
 								step: 1,
 								min: this.state.batchLimits[0],
