@@ -39,7 +39,7 @@ npm run nightwatch
 To deploy
 ```
 rename src/components/providers/Resthub_usual.js as src/components/providers/Resthub.js
-in case the application is used locally with npm use instead src/components/providers/Resthub_usual.js as src/components/providers/Resthub.js
+in case the application is used locally with npm use instead src/components/providers/Resthub_local.js as src/components/providers/Resthub.js
 
 
 ./build.sh
