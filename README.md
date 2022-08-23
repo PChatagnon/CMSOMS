@@ -29,40 +29,49 @@ ssh -l 'your CERN username' lxplus.cern.ch -L 9091:dbloader-tracker:8113
 
 ```
 
-
-Run application
+To run OMS locally
 ```
+cd 'project folder'
+cp src/components/providers/Resthub_local.js  src/components/providers/Resthub.js
 npm start
 ```
 
-Inspect src/setupProxy.js for routing configuration.
-
-
-Run unit tests
+The app is configured to run on Chromium browser. To change this do:
 ```
-npm test a
+#In package.json
+#Modify the line BROWSER='chromium-browser' in
+
+"scripts": {
+    "analyze": "source-map-explorer 'build/static/js/*.js'",
+    "start": "BROWSER='chromium-browser' react-scripts start",
+    ...
+  },
 ```
 
-Run selenium tests
+To build the project, you first have to modify the src/components/providers/Resthub.js file, and run the build script as follow:
 ```
-npm run nightwatch
-```
+#Set the right Restub configuration
+cp src/components/providers/Resthub_usual.js  src/components/providers/Resthub.js
 
-To deploy
-```
-rename src/components/providers/Resthub_usual.js as src/components/providers/Resthub.js
-in case the application is used locally with npm use instead src/components/providers/Resthub_local.js as src/components/providers/Resthub.js
-
-
+#Build the project
 ./build.sh
 ./package.sh
-
-
 ```
-To install on vocms0167
+
+To deploy the app on vocms0167, do:
 ```
-sudo rpm -qa | grep oms
+#The .rpm used to deploy the project is found in your machine in:
+# rpmbuild/RPMS/x86_64
+
+#Copy the .rpm to cern via scp or cernbox
+
+#connect to vocms0167
+ssh vocms0167
+
+#Deploy the project
+#First remove the old version
 sudo rpm -e -all oms-portal-gui
-sudo rpm -i oms-portal-gui-%{_version}-22.x86_64.rpm
-
+#Install the app as:
+sudo rpm -i 'your app.rpm'
 ```
+
