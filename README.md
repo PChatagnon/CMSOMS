@@ -18,6 +18,18 @@ Install dependences
 yarn install
 ```
 
+
+Open tunnels to CERN and tracker API
+
+```
+#In a new terminal
+ssh -l 'your CERN username' lxplus.cern.ch -L 2080:vocms0184.cern.ch:80
+#In a new terminal
+ssh -l 'your CERN username' lxplus.cern.ch -L 9091:dbloader-tracker:8113 
+
+```
+
+
 Run application
 ```
 npm start
